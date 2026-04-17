@@ -1,8 +1,9 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
+/* 1. Kita paksa tema default menjadi gelap (Navy) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0f172a; /* Setara dengan slate-900 di Tailwind */
+  --foreground: #f8fafc; /* Setara dengan slate-50 (Putih bersih) */
 }
 
 @theme inline {
@@ -12,15 +13,13 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* 2. Hapus blok @media (prefers-color-scheme: dark) bawaan Next.js 
+      karena kita ingin aplikasi SwapSkill SELALU bernuansa gelap/navy 
+      apapun settingan laptop usernya. */
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
 }
