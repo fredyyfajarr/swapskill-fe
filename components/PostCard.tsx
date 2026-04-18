@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link'; // TAMBAHAN: Import komponen Link dari Next.js
 
 interface PostCardProps {
   post: {
@@ -12,10 +13,9 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post }: PostCardProps) {
-  // 1. Fungsi merapikan nomor WA (mengubah 08... menjadi 628...)
   const formatWhatsAppNumber = (number: string) => {
     if (!number) return '';
-    let formatted = number.replace(/\D/g, ''); // Hapus semua karakter non-angka
+    let formatted = number.replace(/\D/g, '');
     if (formatted.startsWith('0')) {
       formatted = '62' + formatted.substring(1);
     }
@@ -24,14 +24,12 @@ export default function PostCard({ post }: PostCardProps) {
 
   const waNumber = formatWhatsAppNumber(post.user?.whatsapp_number);
 
-  // 2. Membuat pesan otomatis (URL Encoded agar spasi menjadi format link)
   const waMessage = encodeURIComponent(
     `Halo ${post.user?.name}, salam kenal! 👋\n\nSaya lihat tawaranmu di *SwapSkill*.\nSaya tertarik untuk dibantu *${post.offered_skill?.name}*, dan sebagai gantinya saya bisa bantu kamu soal *${post.needed_skill?.name}*.\n\nBoleh kita diskusi lebih lanjut?`,
   );
 
   const waLink = `https://wa.me/${waNumber}?text=${waMessage}`;
 
-  // Mengubah format tanggal sederhana
   const formattedDate = new Date(post.created_at).toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'short',
@@ -39,19 +37,25 @@ export default function PostCard({ post }: PostCardProps) {
   });
 
   return (
-    // TAMBAHAN: flex flex-col h-full agar tinggi kartu seragam
     <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 transition-all hover:border-slate-600 hover:shadow-xl hover:shadow-black/20 group flex flex-col h-full">
       {/* Header Info User & Tanggal */}
       <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-inner">
+        {/* TAMBAHAN: Membungkus Avatar dan Nama dengan <Link> menuju /users/[id] */}
+        <Link
+          href={`/users/${post.user?.id}`}
+          className="flex items-center gap-3 group/profile transition-all"
+        >
+          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-inner group-hover/profile:shadow-blue-500/50 group-hover/profile:scale-105 transition-all">
             {post.user?.name.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h3 className="text-white font-semibold">{post.user?.name}</h3>
+            {/* Efek hover pada nama agar ketara bisa diklik */}
+            <h3 className="text-white font-semibold group-hover/profile:text-blue-400 group-hover/profile:underline transition-colors decoration-blue-400 underline-offset-2">
+              {post.user?.name}
+            </h3>
             <p className="text-slate-400 text-xs">{formattedDate}</p>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Bagian Pertukaran Skill */}
@@ -92,13 +96,11 @@ export default function PostCard({ post }: PostCardProps) {
       </div>
 
       {/* Deskripsi */}
-      {/* TAMBAHAN: flex-grow agar sisa ruang kosong mendorong tombol ke bawah */}
       <p className="text-slate-300 text-sm leading-relaxed mb-6 flex-grow">
         "{post.description}"
       </p>
 
       {/* Tombol Aksi WhatsApp */}
-      {/* TAMBAHAN: mt-auto untuk nempel di bawah, dan w-full & justify-center agar melebar penuh */}
       <div className="mt-auto pt-4 border-t border-slate-700/50">
         <a
           href={waLink}

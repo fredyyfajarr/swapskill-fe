@@ -99,7 +99,7 @@ export default function NotificationBell() {
 
       {/* Dropdown Notifikasi */}
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-80 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 sm:absolute sm:top-auto sm:left-auto sm:translate-x-0 sm:right-0 sm:mt-3 w-[92vw] sm:w-80 max-w-sm bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
           {/* --- HEADER NOTIFIKASI YANG RAPI --- */}
           <div className="flex justify-between items-center mb-3 px-2">
             <h3 className="text-white font-bold">Notifikasi</h3>
