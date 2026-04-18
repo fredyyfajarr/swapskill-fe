@@ -29,7 +29,8 @@ export default function Navbar() {
   return (
     <>
       <nav className="fixed top-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
-        <div className="w-full max-w-5xl bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-3 flex justify-between items-center shadow-[0_8px_30px_rgb(0,0,0,0.4)] pointer-events-auto transition-all">
+        <div className="relative w-full max-w-5xl bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl px-4 sm:px-6 py-3 flex justify-between items-center shadow-[0_8px_30px_rgb(0,0,0,0.4)] pointer-events-auto transition-all">
+          {' '}
           {/* --- 1. LOGO TYPOGRAPHY AWAL --- */}
           <Link
             href="/dashboard"
@@ -38,7 +39,6 @@ export default function Navbar() {
             Swap<span className="text-blue-500">Skill</span>
             <span className="absolute -top-1 -right-2 w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
           </Link>
-
           {/* --- 2. KELOMPOK KANAN (LONCENG & MENU) --- */}
           <div className="flex items-center gap-3 sm:gap-5 z-50 relative">
             {/* Komponen Lonceng Notifikasi */}
@@ -60,7 +60,6 @@ export default function Navbar() {
               ></span>
             </button>
           </div>
-
           {/* Dropdown Menu (Profil & Logout) */}
           <div
             className={`absolute top-full right-0 mt-4 w-56 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-2 transition-all duration-300 origin-top-right ${isOpen ? 'scale-100 opacity-100 visible' : 'scale-95 opacity-0 invisible'}`}

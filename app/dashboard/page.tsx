@@ -39,9 +39,9 @@ export default function DashboardPage() {
     description: '',
   });
 
-  // State baru untuk filter
-  const [selectedSkill, setSelectedSkill] = useState(''); // Filter kategori
-  const [sortBy, setSortBy] = useState('latest'); // Filter urutan
+  // State untuk filter
+  const [selectedSkill, setSelectedSkill] = useState('');
+  const [sortBy, setSortBy] = useState('latest');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -54,9 +54,9 @@ export default function DashboardPage() {
     fetchRecommendations();
   }, [router]);
 
-  // Panggil ulang fetchPosts saat filter/sort berubah
+  // Panggil ulang API saat filter Dropdown berubah
   useEffect(() => {
-    fetchPosts(searchQuery, 1, false);
+    fetchPosts('', 1, false);
   }, [selectedSkill, sortBy]);
 
   const fetchPosts = async (query = '', pageNum = 1, isLoadMore = false) => {
@@ -68,8 +68,8 @@ export default function DashboardPage() {
         params: {
           search: query,
           page: pageNum,
-          skill_id: selectedSkill, // Parameter filter kategori
-          sort: sortBy, // Parameter filter urutan
+          skill_id: selectedSkill,
+          sort: sortBy,
         },
       });
 
@@ -107,14 +107,9 @@ export default function DashboardPage() {
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchPosts(searchQuery, 1, false);
-  };
-
   const handleLoadMore = () => {
     if (!isLoadingMore && hasMore) {
-      fetchPosts(searchQuery, page + 1, true);
+      fetchPosts('', page + 1, true);
     }
   };
 
@@ -134,28 +129,63 @@ export default function DashboardPage() {
     }
   };
 
+  // --- LOGIKA LIVE SEARCH FRONTEND ---
+  const filteredPosts = posts.filter((post) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      post.needed_skill?.name.toLowerCase().includes(query) ||
+      post.offered_skill?.name.toLowerCase().includes(query) ||
+      post.description.toLowerCase().includes(query) ||
+      post.user?.name.toLowerCase().includes(query)
+    );
+  });
+
   return (
-    <div className="max-w-3xl mx-auto mt-8 px-4">
-      {/* BARIS PENCARIAN & FILTER CANGGIH */}
+    <div className="max-w-3xl mx-auto mt-8 px-4 pb-20">
+      {/* ================================================= */}
+      {/* BARIS PENCARIAN & FILTER (TATA LETAK DIPERBAIKI)  */}
+      {/* ================================================= */}
       <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4 mb-8">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Input Pencarian Teks */}
-          <form onSubmit={handleSearch} className="flex-1 relative">
-            <span className="absolute left-4 top-3.5 text-slate-500">🔍</span>
+        <div className="flex flex-col md:flex-row gap-3">
+          {/* Input Live Search (Fleksibel memanjang) */}
+          <div className="relative group flex-1">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg
+                className="w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                ></path>
+              </svg>
+            </div>
             <input
               type="text"
-              placeholder="Ketik keahlian yang dicari (mis: Java)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:border-blue-500 transition-colors"
+              placeholder="Cari keahlian atau nama mahasiswa..."
+              className="w-full bg-slate-900/50 border border-slate-700/50 text-white text-sm rounded-xl pl-12 pr-10 py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-500"
             />
-          </form>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                ✕
+              </button>
+            )}
+          </div>
 
           {/* Dropdown Kategori Skill */}
           <select
             value={selectedSkill}
             onChange={(e) => setSelectedSkill(e.target.value)}
-            className="bg-slate-900/50 border border-slate-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors md:w-48 appearance-none"
+            className="bg-slate-900/50 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors md:w-44 appearance-none outline-none"
           >
             <option value="">Semua Kategori</option>
             {skills.map((skill) => (
@@ -169,24 +199,26 @@ export default function DashboardPage() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="bg-slate-900/50 border border-slate-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors md:w-40 appearance-none"
+            className="bg-slate-900/50 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors md:w-36 appearance-none outline-none"
           >
             <option value="latest">Terbaru</option>
             <option value="oldest">Terlama</option>
           </select>
         </div>
       </div>
+      {/* ================================================= */}
 
       {/* Tombol Buat Tawaran */}
       <div className="flex justify-end mb-6">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="w-full md:w-auto px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl shadow-lg hover:shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 whitespace-nowrap"
+          className="w-full md:w-auto px-6 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl shadow-lg hover:shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
         >
           <span className="text-xl leading-none">+</span> Buat Tawaran
         </button>
       </div>
 
+      {/* MODAL BUAT TAWARAN */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -236,7 +268,7 @@ export default function DashboardPage() {
               required
               rows={4}
               placeholder="Contoh: Saya butuh bantuan setup server..."
-              className="w-full p-4 bg-slate-900/80 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 transition-all resize-none"
+              className="w-full p-4 bg-slate-900/80 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 transition-all resize-none outline-none"
               value={newPost.description}
               onChange={(e) =>
                 setNewPost({ ...newPost, description: e.target.value })
@@ -265,8 +297,8 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
-            {/* SECTION REKOMENDASI PINTAR */}
-            {recommendations.length > 0 && (
+            {/* SECTION REKOMENDASI PINTAR (Hanya muncul jika tidak sedang mencari) */}
+            {recommendations.length > 0 && searchQuery === '' && (
               <div className="mb-12">
                 <div className="flex items-center gap-2 mb-6">
                   <span className="text-2xl">✨</span>
@@ -274,7 +306,6 @@ export default function DashboardPage() {
                     Rekomendasi Jodoh Barter
                   </h2>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {recommendations.map((post) => (
                     <div key={post.id} className="relative group">
@@ -285,18 +316,27 @@ export default function DashboardPage() {
                     </div>
                   ))}
                 </div>
-
                 <div className="h-[1px] w-full bg-slate-800 my-10"></div>
               </div>
             )}
 
-            {/* Looping Kartu Postingan */}
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
+            {/* ================================================= */}
+            {/* LOOPING KARTU POSTINGAN (MENGGUNAKAN FILTERED)    */}
+            {/* ================================================= */}
+            {filteredPosts.length > 0 ? (
+              filteredPosts.map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))
+            ) : (
+              <div className="text-center py-12 bg-slate-800/10 border border-slate-700/30 rounded-2xl border-dashed mt-4">
+                <p className="text-slate-400">
+                  Tidak ada tawaran yang cocok dengan pencarian "{searchQuery}"
+                </p>
+              </div>
+            )}
 
-            {/* TOMBOL LOAD MORE */}
-            {hasMore && (
+            {/* TOMBOL LOAD MORE (Hanya muncul jika tidak sedang mencari) */}
+            {hasMore && searchQuery === '' && (
               <div className="flex justify-center pt-8 pb-12">
                 <button
                   onClick={handleLoadMore}
@@ -311,7 +351,8 @@ export default function DashboardPage() {
                 </button>
               </div>
             )}
-            {!hasMore && posts.length > 0 && (
+
+            {!hasMore && posts.length > 0 && searchQuery === '' && (
               <p className="text-center text-slate-600 text-sm py-8 italic">
                 Kamu sudah melihat semua tawaran yang ada.
               </p>
