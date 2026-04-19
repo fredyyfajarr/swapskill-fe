@@ -1,77 +1,87 @@
-import React from 'react';
-import Link from 'next/link'; // TAMBAHAN: Import komponen Link dari Next.js
+'use client';
 
-interface PostCardProps {
-  post: {
-    id: number;
-    description: string;
-    user: { name: string; id: number; whatsapp_number: string };
-    needed_skill: { name: string };
-    offered_skill: { name: string };
-    created_at: string;
-  };
-}
+import { useState } from 'react';
+import api from '@/lib/axios';
+import toast from 'react-hot-toast';
 
-export default function PostCard({ post }: PostCardProps) {
-  const formatWhatsAppNumber = (number: string) => {
-    if (!number) return '';
-    let formatted = number.replace(/\D/g, '');
-    if (formatted.startsWith('0')) {
-      formatted = '62' + formatted.substring(1);
+export default function PostCard({
+  post,
+  currentUser,
+}: {
+  post: any;
+  currentUser?: any;
+}) {
+  const [isBookmarked, setIsBookmarked] = useState(post.is_bookmarked || false);
+
+  const toggleBookmark = async () => {
+    try {
+      await api.post(`/posts/${post.id}/bookmark`);
+      setIsBookmarked(!isBookmarked);
+      toast.success(
+        !isBookmarked ? 'Disimpan ke Bookmark 🔖' : 'Dihapus dari Bookmark 🗑️',
+      );
+    } catch (error) {
+      toast.error('Gagal menyimpan bookmark.');
     }
-    return formatted;
   };
 
-  const waNumber = formatWhatsAppNumber(post.user?.whatsapp_number);
+  const handleChatWA = () => {
+    let phone = post.user?.whatsapp_number || '';
+    if (phone.startsWith('0')) phone = '62' + phone.substring(1);
 
-  const waMessage = encodeURIComponent(
-    `Halo ${post.user?.name}, salam kenal! 👋\n\nSaya lihat tawaranmu di *SwapSkill*.\nSaya tertarik untuk dibantu *${post.offered_skill?.name}*, dan sebagai gantinya saya bisa bantu kamu soal *${post.needed_skill?.name}*.\n\nBoleh kita diskusi lebih lanjut?`,
-  );
-
-  const waLink = `https://wa.me/${waNumber}?text=${waMessage}`;
-
-  const formattedDate = new Date(post.created_at).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+    const message = `Halo ${post.user?.name}, saya lihat tawaran barter kamu di SwapSkill. Saya bisa bantu ${post.needed_skill?.name} dan butuh bantuan ${post.offered_skill?.name} kamu. Boleh diskusi?`;
+    window.open(
+      `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
+      '_blank',
+    );
+  };
 
   return (
-    <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 transition-all hover:border-slate-600 hover:shadow-xl hover:shadow-black/20 group flex flex-col h-full">
-      {/* Header Info User & Tanggal */}
-      <div className="flex justify-between items-start mb-4">
-        {/* TAMBAHAN: Membungkus Avatar dan Nama dengan <Link> menuju /users/[id] */}
-        <Link
-          href={`/users/${post.user?.id}`}
-          className="flex items-center gap-3 group/profile transition-all"
-        >
-          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-inner group-hover/profile:shadow-blue-500/50 group-hover/profile:scale-105 transition-all">
-            {post.user?.name.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            {/* Efek hover pada nama agar ketara bisa diklik */}
-            <h3 className="text-white font-semibold group-hover/profile:text-blue-400 group-hover/profile:underline transition-colors decoration-blue-400 underline-offset-2">
-              {post.user?.name}
-            </h3>
-            <p className="text-slate-400 text-xs">{formattedDate}</p>
-          </div>
-        </Link>
+    <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/60 transition-colors relative group h-full flex flex-col">
+      {/* TOMBOL BOOKMARK */}
+      <button
+        onClick={toggleBookmark}
+        className="absolute top-5 right-5 text-xl opacity-70 hover:opacity-100 hover:scale-110 transition-all focus:outline-none"
+        title="Simpan Tawaran"
+      >
+        {isBookmarked ? '🔖' : '🤍'}
+      </button>
+
+      {/* HEADER CARD */}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/20 shrink-0">
+          {post.user?.name?.charAt(0).toUpperCase() || 'U'}
+        </div>
+        <div>
+          <h4 className="text-white font-bold text-sm">{post.user?.name}</h4>
+          <p className="text-slate-400 text-xs">
+            {new Date(post.created_at).toLocaleDateString('id-ID', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </p>
+        </div>
       </div>
 
-      {/* Bagian Pertukaran Skill */}
-      <div className="bg-slate-900/50 rounded-xl p-4 mb-4 border border-slate-800 flex flex-col md:flex-row items-center gap-4 text-sm">
-        <div className="flex-1 w-full text-center md:text-left">
-          <p className="text-slate-400 text-xs mb-1 uppercase tracking-wider font-semibold">
+      {/* SKILL BARTER DENGAN ICON PANAH (⇄) */}
+      <div className="flex items-center gap-2 mb-5">
+        <div className="flex-1 bg-slate-900/50 p-3 rounded-xl border border-slate-700/50 text-center">
+          <p className="text-[10px] text-slate-500 font-bold mb-1 uppercase tracking-widest">
             Butuh Bantuan
           </p>
-          <span className="inline-block bg-blue-500/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-lg font-medium">
+          <p
+            className="text-emerald-400 font-bold text-sm truncate"
+            title={post.needed_skill?.name}
+          >
             {post.needed_skill?.name}
-          </span>
+          </p>
         </div>
 
-        <div className="hidden md:flex text-slate-500">
+        {/* Icon Tukar / Swap */}
+        <div className="shrink-0 text-slate-500 bg-slate-800 p-2 rounded-full border border-slate-700">
           <svg
-            className="w-6 h-6"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -85,39 +95,40 @@ export default function PostCard({ post }: PostCardProps) {
           </svg>
         </div>
 
-        <div className="flex-1 w-full text-center md:text-right">
-          <p className="text-slate-400 text-xs mb-1 uppercase tracking-wider font-semibold">
-            Menawarkan
+        <div className="flex-1 bg-slate-900/50 p-3 rounded-xl border border-slate-700/50 text-center">
+          <p className="text-[10px] text-slate-500 font-bold mb-1 uppercase tracking-widest">
+            Tawarkan Skill
           </p>
-          <span className="inline-block bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-lg font-medium">
+          <p
+            className="text-blue-400 font-bold text-sm truncate"
+            title={post.offered_skill?.name}
+          >
             {post.offered_skill?.name}
-          </span>
+          </p>
         </div>
       </div>
 
-      {/* Deskripsi */}
-      <p className="text-slate-300 text-sm leading-relaxed mb-6 flex-grow">
-        "{post.description}"
-      </p>
+      {/* DESKRIPSI (flex-grow agar mengisi ruang kosong dan meratakan tombol bawah) */}
+      <div className="flex-grow flex flex-col">
+        <p className="text-slate-300 text-sm leading-relaxed bg-slate-900/30 p-4 rounded-xl border border-slate-700/30 h-full">
+          "{post.description}"
+        </p>
+      </div>
 
-      {/* Tombol Aksi WhatsApp */}
-      <div className="mt-auto pt-4 border-t border-slate-700/50">
-        <a
-          href={waLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20bd5a] text-white px-5 py-3 rounded-xl font-medium transition-transform transform hover:-translate-y-0.5 shadow-lg shadow-green-900/20"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
+      {/* FOOTER (TOMBOL AKSI) */}
+      <div className="flex justify-end border-t border-slate-700/50 pt-4 mt-5">
+        {currentUser?.id !== post.user?.id ? (
+          <button
+            onClick={handleChatWA}
+            className="flex items-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-[#25D366]/20 w-full justify-center md:w-auto"
           >
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
-          </svg>
-          Chat via WhatsApp
-        </a>
+            💬 Chat via WhatsApp
+          </button>
+        ) : (
+          <div className="px-4 py-2 bg-slate-700/50 text-slate-400 rounded-xl text-sm font-semibold border border-slate-600/50 w-full text-center md:w-auto">
+            📝 Postingan Kamu Sendiri
+          </div>
+        )}
       </div>
     </div>
   );

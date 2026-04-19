@@ -18,10 +18,12 @@ interface Post {
   needed_skill: { name: string };
   offered_skill: { name: string };
   created_at: string;
+  is_bookmarked?: boolean; // Dikembalikan
 }
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [user, setUser] = useState<any>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,18 +32,30 @@ export default function DashboardPage() {
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+  // State Modal Buat Tawaran
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [recommendations, setRecommendations] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState({
     needed_skill: '',
     offered_skill: '',
     description: '',
   });
 
-  // State untuk filter
+  // State Modal Review / Ulasan (Dikembalikan)
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewData, setReviewData] = useState({
+    user_id: '',
+    rating: 5,
+    comment: '',
+  });
+
+  const [recommendations, setRecommendations] = useState<Post[]>([]);
   const [selectedSkill, setSelectedSkill] = useState('');
   const [sortBy, setSortBy] = useState('latest');
+
+  // Filter Bookmark (Dikembalikan)
+  const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -49,15 +63,33 @@ export default function DashboardPage() {
       router.push('/login');
       return;
     }
-    fetchPosts();
-    fetchSkills();
-    fetchRecommendations();
+    fetchUser();
   }, [router]);
 
-  // Panggil ulang API saat filter Dropdown berubah
   useEffect(() => {
-    fetchPosts('', 1, false);
-  }, [selectedSkill, sortBy]);
+    if (user?.is_verified) {
+      fetchPosts('', 1, false);
+      fetchSkills();
+      fetchRecommendations();
+    } else if (user) {
+      setLoading(false);
+    }
+  }, [user?.is_verified]);
+
+  useEffect(() => {
+    if (user?.is_verified) {
+      fetchPosts('', 1, false);
+    }
+  }, [selectedSkill, sortBy, showBookmarksOnly]); // showBookmarksOnly masuk ke trigger
+
+  const fetchUser = async () => {
+    try {
+      const res = await api.get('/profile');
+      setUser(res.data.data);
+    } catch (error) {
+      console.error('Gagal memuat profil');
+    }
+  };
 
   const fetchPosts = async (query = '', pageNum = 1, isLoadMore = false) => {
     if (isLoadMore) setIsLoadingMore(true);
@@ -70,14 +102,12 @@ export default function DashboardPage() {
           page: pageNum,
           skill_id: selectedSkill,
           sort: sortBy,
+          bookmarked: showBookmarksOnly ? 1 : 0, // Parameter API Bookmark
         },
       });
 
-      if (isLoadMore) {
-        setPosts((prev) => [...prev, ...res.data.data]);
-      } else {
-        setPosts(res.data.data);
-      }
+      if (isLoadMore) setPosts((prev) => [...prev, ...res.data.data]);
+      else setPosts(res.data.data);
 
       setHasMore(res.data.has_more);
       setPage(pageNum);
@@ -103,14 +133,12 @@ export default function DashboardPage() {
       const res = await api.get('/skills');
       setSkills(res.data.data);
     } catch (error) {
-      console.error('Gagal mengambil skill', error);
+      console.error('Gagal mengambil skill');
     }
   };
 
   const handleLoadMore = () => {
-    if (!isLoadingMore && hasMore) {
-      fetchPosts('', page + 1, true);
-    }
+    if (!isLoadingMore && hasMore) fetchPosts('', page + 1, true);
   };
 
   const handleCreatePost = async (e: React.FormEvent) => {
@@ -129,7 +157,27 @@ export default function DashboardPage() {
     }
   };
 
-  // --- LOGIKA LIVE SEARCH FRONTEND ---
+  // Handler Submit Ulasan (Dikembalikan)
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingReview(true);
+    try {
+      // Pastikan endpoint review di Laravel kamu adalah /reviews
+      await api.post('/reviews', {
+        reviewed_id: reviewData.user_id,
+        rating: reviewData.rating,
+        comment: reviewData.comment,
+      });
+      toast.success('Ulasan berhasil dikirim!');
+      setIsReviewModalOpen(false);
+      setReviewData({ user_id: '', rating: 5, comment: '' });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Gagal mengirim ulasan');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
   const filteredPosts = posts.filter((post) => {
     const query = searchQuery.toLowerCase();
     return (
@@ -140,115 +188,181 @@ export default function DashboardPage() {
     );
   });
 
+  if (loading && !user)
+    return (
+      <div className="text-center mt-20 text-slate-500 animate-pulse">
+        Menghubungkan ke server...
+      </div>
+    );
+
   return (
     <div className="max-w-3xl mx-auto mt-8 px-4 pb-20">
-      {/* ================================================= */}
-      {/* BARIS PENCARIAN & FILTER (TATA LETAK DIPERBAIKI)  */}
-      {/* ================================================= */}
-      <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4 mb-8">
-        <div className="flex flex-col md:flex-row gap-3">
-          {/* Input Live Search (Fleksibel memanjang) */}
-          <div className="relative group flex-1">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <svg
-                className="w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                ></path>
-              </svg>
+      {/* BANNER NOTIFIKASI VERIFIKASI */}
+      {user && !user.is_verified && (
+        <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center gap-4 shadow-lg shadow-amber-900/10 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl rounded-full pointer-events-none"></div>
+            <div className="text-4xl text-amber-500">⏳</div>
+            <div className="flex-1">
+              {/* BUG FIX: Nama sekarang dinamis mengambil dari database user */}
+              <h3 className="text-amber-400 font-bold text-lg mb-1 tracking-tight">
+                Halo {user?.name || 'Mahasiswa'}, Akunmu Sedang Diverifikasi
+              </h3>
+              <p className="text-amber-200/70 text-sm leading-relaxed">
+                Admin sedang mengecek data KTM kamu.{' '}
+                <strong className="text-amber-300">
+                  Feeds tawaran barter akan terbuka otomatis setelah akunmu
+                  disetujui via WhatsApp.
+                </strong>
+              </p>
             </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari keahlian atau nama mahasiswa..."
-              className="w-full bg-slate-900/50 border border-slate-700/50 text-white text-sm rounded-xl pl-12 pr-10 py-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-500"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-slate-300 transition-colors"
+          </div>
+        </div>
+      )}
+
+      {user?.is_verified ? (
+        <>
+          {/* SEARCH & FILTER AREA */}
+          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4 mb-8">
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="relative group flex-1">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari keahlian mahasiswa..."
+                  className="w-full bg-slate-900/50 border border-slate-700/50 text-white text-sm rounded-xl pl-12 pr-10 py-3 outline-none focus:border-blue-500 transition-all"
+                />
+              </div>
+              <select
+                value={selectedSkill}
+                onChange={(e) => setSelectedSkill(e.target.value)}
+                className="bg-slate-900/50 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-colors md:w-44"
               >
-                ✕
+                <option value="">Semua Skill</option>
+                {skills.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* BUG FIX: Tombol Toggle Bookmark Dikembalikan */}
+            <div className="flex mt-3 gap-2 border-t border-slate-700/50 pt-3">
+              <button
+                onClick={() => setShowBookmarksOnly(false)}
+                className={`text-xs font-bold px-4 py-2 rounded-lg transition-colors ${!showBookmarksOnly ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+              >
+                🌐 Semua Post
               </button>
-            )}
+              <button
+                onClick={() => setShowBookmarksOnly(true)}
+                className={`text-xs font-bold px-4 py-2 rounded-lg transition-colors ${showBookmarksOnly ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+              >
+                🔖 Disimpan
+              </button>
+            </div>
           </div>
 
-          {/* Dropdown Kategori Skill */}
-          <select
-            value={selectedSkill}
-            onChange={(e) => setSelectedSkill(e.target.value)}
-            className="bg-slate-900/50 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors md:w-44 appearance-none outline-none"
-          >
-            <option value="">Semua Kategori</option>
-            {skills.map((skill) => (
-              <option key={skill.id} value={skill.id}>
-                {skill.name}
-              </option>
+          <div className="flex justify-between items-center mb-6">
+            {/* BUG FIX: Tombol Beri Ulasan Dikembalikan */}
+            <button
+              onClick={() => setIsReviewModalOpen(true)}
+              className="px-5 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-2xl border border-slate-700 transition-all flex items-center gap-2"
+            >
+              <span>⭐</span> Beri Ulasan
+            </button>
+
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg transition-all transform hover:-translate-y-0.5"
+            >
+              + Buat Tawaran
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            {recommendations.length > 0 &&
+              searchQuery === '' &&
+              !showBookmarksOnly && (
+                <div className="mb-12">
+                  <div className="flex items-center gap-2 mb-6 text-white font-bold text-xl">
+                    ✨ Rekomendasi Jodoh Barter
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {recommendations.map((p) => (
+                      <PostCard key={p.id} post={p} />
+                    ))}
+                  </div>
+                  <div className="h-px bg-slate-800 my-10"></div>
+                </div>
+              )}
+
+            {filteredPosts.map((p) => (
+              <PostCard key={p.id} post={p} />
             ))}
-          </select>
 
-          {/* Dropdown Urutan */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="bg-slate-900/50 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition-colors md:w-36 appearance-none outline-none"
-          >
-            <option value="latest">Terbaru</option>
-            <option value="oldest">Terlama</option>
-          </select>
+            {hasMore && searchQuery === '' && (
+              <div className="flex justify-center pt-8">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                  className="px-8 py-3 bg-slate-800 text-slate-300 font-bold rounded-2xl border border-slate-700 transition-all disabled:opacity-50"
+                >
+                  {isLoadingMore ? '⏳ Memuat...' : '👇 Muat Lebih Banyak'}
+                </button>
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        /* PLACEHOLDER MODE TERKUNCI */
+        <div className="flex flex-col items-center justify-center py-24 bg-slate-800/20 border border-slate-700/30 rounded-[3rem] mt-4">
+          <div className="text-7xl mb-6 filter drop-shadow-[0_0_15px_rgba(251,191,36,0.2)] grayscale opacity-50">
+            🔒
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2 tracking-tight uppercase">
+            Akses Terbatas
+          </h2>
+          <p className="text-slate-500 text-center max-w-sm px-6">
+            Konten feeds khusus mahasiswa akan terbuka setelah verifikasi KTM
+            selesai.
+          </p>
         </div>
-      </div>
-      {/* ================================================= */}
-
-      {/* Tombol Buat Tawaran */}
-      <div className="flex justify-end mb-6">
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="w-full md:w-auto px-6 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-2xl shadow-lg hover:shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
-        >
-          <span className="text-xl leading-none">+</span> Buat Tawaran
-        </button>
-      </div>
+      )}
 
       {/* MODAL BUAT TAWARAN */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Buat Tawaran Barter"
+        title="Buat Tawaran Baru"
       >
         <form onSubmit={handleCreatePost} className="space-y-5">
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-300">
-              Saya butuh diajari/dibantu:
+          <div className="space-y-1">
+            <label className="text-sm font-semibold text-slate-400 ml-1">
+              Saya butuh bantuan:
             </label>
             <input
               list="skills-list"
               required
-              placeholder="Ketik skill (mis: Laravel, UI/UX, dll)..."
-              className="w-full p-3.5 bg-slate-900/80 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-blue-500 transition-all outline-none"
+              placeholder="Cari skill..."
+              className="w-full p-4 bg-slate-900 border border-slate-700 rounded-2xl text-white outline-none focus:border-blue-500"
               value={newPost.needed_skill}
               onChange={(e) =>
                 setNewPost({ ...newPost, needed_skill: e.target.value })
               }
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-300">
-              Sebagai gantinya, saya bisa:
+          <div className="space-y-1">
+            <label className="text-sm font-semibold text-slate-400 ml-1">
+              Sebagai gantinya:
             </label>
             <input
               list="skills-list"
               required
-              placeholder="Ketik skill keahlianmu..."
-              className="w-full p-3.5 bg-slate-900/80 border border-slate-600 rounded-xl text-white focus:ring-2 focus:ring-emerald-500 transition-all outline-none"
+              placeholder="Keahlian saya..."
+              className="w-full p-4 bg-slate-900 border border-slate-700 rounded-2xl text-white outline-none focus:border-emerald-500"
               value={newPost.offered_skill}
               onChange={(e) =>
                 setNewPost({ ...newPost, offered_skill: e.target.value })
@@ -256,110 +370,97 @@ export default function DashboardPage() {
             />
           </div>
           <datalist id="skills-list">
-            {skills.map((skill) => (
-              <option key={skill.id} value={skill.name} />
+            {skills.map((s) => (
+              <option key={s.id} value={s.name} />
             ))}
           </datalist>
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-300">
-              Deskripsi Detail:
+          <div className="space-y-1">
+            <label className="text-sm font-semibold text-slate-400 ml-1">
+              Deskripsi:
             </label>
             <textarea
               required
               rows={4}
-              placeholder="Contoh: Saya butuh bantuan setup server..."
-              className="w-full p-4 bg-slate-900/80 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 transition-all resize-none outline-none"
+              placeholder="Jelaskan kebutuhanmu..."
+              className="w-full p-4 bg-slate-900 border border-slate-700 rounded-2xl text-white outline-none focus:border-blue-500"
               value={newPost.description}
               onChange={(e) =>
                 setNewPost({ ...newPost, description: e.target.value })
               }
-            ></textarea>
+            />
           </div>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all disabled:bg-slate-600 disabled:cursor-not-allowed mt-2 shadow-lg"
+            className="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg disabled:bg-slate-600"
           >
-            {isSubmitting ? 'Memposting...' : 'Posting ke Skill Board'}
+            {isSubmitting ? 'Memposting...' : 'Posting Sekarang'}
           </button>
         </form>
       </Modal>
 
-      <div className="space-y-6">
-        {loading ? (
-          <div className="text-center text-slate-500 py-10 animate-pulse">
-            Menarik data dari server...
+      {/* BUG FIX: MODAL BERI ULASAN DIKEMBALIKAN */}
+      <Modal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        title="Beri Ulasan Partner"
+      >
+        <form onSubmit={handleReviewSubmit} className="space-y-5">
+          <div className="space-y-1">
+            <label className="text-sm font-semibold text-slate-400 ml-1">
+              ID User Partner:
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="Masukkan ID User yang dibarter..."
+              className="w-full p-4 bg-slate-900 border border-slate-700 rounded-2xl text-white outline-none focus:border-amber-500"
+              value={reviewData.user_id}
+              onChange={(e) =>
+                setReviewData({ ...reviewData, user_id: e.target.value })
+              }
+            />
           </div>
-        ) : posts.length === 0 ? (
-          <div className="text-center py-20 bg-slate-800/20 border border-slate-700/30 rounded-3xl border-dashed">
-            <span className="text-4xl mb-4 block">🏜️</span>
-            <p className="text-slate-400">Belum ada tawaran tersedia.</p>
+          <div className="space-y-1">
+            <label className="text-sm font-semibold text-slate-400 ml-1">
+              Rating (1-5):
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="5"
+              required
+              className="w-full p-4 bg-slate-900 border border-slate-700 rounded-2xl text-white outline-none focus:border-amber-500"
+              value={reviewData.rating}
+              onChange={(e) =>
+                setReviewData({ ...reviewData, rating: Number(e.target.value) })
+              }
+            />
           </div>
-        ) : (
-          <>
-            {/* SECTION REKOMENDASI PINTAR (Hanya muncul jika tidak sedang mencari) */}
-            {recommendations.length > 0 && searchQuery === '' && (
-              <div className="mb-12">
-                <div className="flex items-center gap-2 mb-6">
-                  <span className="text-2xl">✨</span>
-                  <h2 className="text-xl font-bold text-white tracking-tight">
-                    Rekomendasi Jodoh Barter
-                  </h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {recommendations.map((post) => (
-                    <div key={post.id} className="relative group">
-                      <div className="absolute -top-2 -right-2 z-10 bg-gradient-to-r from-yellow-400 to-orange-500 text-[10px] font-black text-slate-900 px-2 py-1 rounded-lg shadow-lg rotate-3 uppercase">
-                        Perfect Match!
-                      </div>
-                      <PostCard post={post} />
-                    </div>
-                  ))}
-                </div>
-                <div className="h-[1px] w-full bg-slate-800 my-10"></div>
-              </div>
-            )}
-
-            {/* ================================================= */}
-            {/* LOOPING KARTU POSTINGAN (MENGGUNAKAN FILTERED)    */}
-            {/* ================================================= */}
-            {filteredPosts.length > 0 ? (
-              filteredPosts.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))
-            ) : (
-              <div className="text-center py-12 bg-slate-800/10 border border-slate-700/30 rounded-2xl border-dashed mt-4">
-                <p className="text-slate-400">
-                  Tidak ada tawaran yang cocok dengan pencarian "{searchQuery}"
-                </p>
-              </div>
-            )}
-
-            {/* TOMBOL LOAD MORE (Hanya muncul jika tidak sedang mencari) */}
-            {hasMore && searchQuery === '' && (
-              <div className="flex justify-center pt-8 pb-12">
-                <button
-                  onClick={handleLoadMore}
-                  disabled={isLoadingMore}
-                  className="px-8 py-3 bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold rounded-2xl border border-slate-700 transition-all shadow-lg disabled:opacity-50 flex items-center gap-2"
-                >
-                  {isLoadingMore ? (
-                    <span className="animate-spin text-xl">⏳</span>
-                  ) : (
-                    '👇 Muat Lebih Banyak'
-                  )}
-                </button>
-              </div>
-            )}
-
-            {!hasMore && posts.length > 0 && searchQuery === '' && (
-              <p className="text-center text-slate-600 text-sm py-8 italic">
-                Kamu sudah melihat semua tawaran yang ada.
-              </p>
-            )}
-          </>
-        )}
-      </div>
+          <div className="space-y-1">
+            <label className="text-sm font-semibold text-slate-400 ml-1">
+              Komentar:
+            </label>
+            <textarea
+              required
+              rows={3}
+              placeholder="Bagaimana pengalamanmu berkolaborasi dengan dia?"
+              className="w-full p-4 bg-slate-900 border border-slate-700 rounded-2xl text-white outline-none focus:border-amber-500"
+              value={reviewData.comment}
+              onChange={(e) =>
+                setReviewData({ ...reviewData, comment: e.target.value })
+              }
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isSubmittingReview}
+            className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl shadow-lg disabled:bg-slate-600"
+          >
+            {isSubmittingReview ? 'Mengirim...' : 'Kirim Ulasan'}
+          </button>
+        </form>
+      </Modal>
     </div>
   );
 }

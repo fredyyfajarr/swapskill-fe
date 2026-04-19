@@ -6,16 +6,29 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import ConfirmModal from './ConfirmModal';
 import NotificationBell from './NotificationBell';
+import api from '@/lib/axios'; // Tambahan import axios
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [user, setUser] = useState<any>(null); // State untuk data user
   const router = useRouter();
 
-  // TAMBAHAN: Ref untuk mendeteksi klik di luar Hamburger menu
   const hamburgerRef = useRef<HTMLDivElement>(null);
 
-  // TAMBAHAN: Fungsi otomatis menutup dropdown jika klik di luar
+  // Ambil data user untuk mengecek status verifikasi di Navbar
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await api.get('/profile');
+        setUser(res.data.data);
+      } catch (e) {
+        console.error('Gagal mengambil profil di Navbar', e);
+      }
+    };
+    fetchUser();
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -58,9 +71,7 @@ export default function Navbar() {
             {/* Lonceng Notifikasi */}
             <NotificationBell />
 
-            {/* Bungkus Hamburger Button & Dropdown dengan Ref */}
             <div ref={hamburgerRef} className="relative">
-              {/* Hamburger Button */}
               <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="relative w-10 h-10 flex flex-col justify-center items-center group outline-none"
@@ -76,27 +87,33 @@ export default function Navbar() {
                 ></span>
               </button>
 
-              {/* Dropdown Menu (Profil, Pengaturan, Logout) */}
               <div
                 className={`absolute top-full right-0 mt-4 w-56 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-2 transition-all duration-300 origin-top-right ${isOpen ? 'scale-100 opacity-100 visible' : 'scale-95 opacity-0 invisible'}`}
               >
                 <div className="flex flex-col gap-1">
-                  <Link
-                    href="/profile"
-                    onClick={() => setIsOpen(false)}
-                    className="px-4 py-3 text-sm font-medium text-slate-200 hover:text-white hover:bg-white/5 rounded-xl transition-colors text-left flex items-center gap-2"
-                  >
-                    🧑‍💻 Lihat Profil Saya
-                  </Link>
-
-                  {/* TAMBAHAN: Menu Pengaturan */}
-                  <Link
-                    href="/settings"
-                    onClick={() => setIsOpen(false)}
-                    className="px-4 py-3 text-sm font-medium text-slate-200 hover:text-white hover:bg-white/5 rounded-xl transition-colors text-left flex items-center gap-2"
-                  >
-                    ⚙️ Pengaturan Akun
-                  </Link>
+                  {/* LOGIKA NAVBAR TERKUNCI */}
+                  {user?.is_verified ? (
+                    <>
+                      <Link
+                        href="/profile"
+                        onClick={() => setIsOpen(false)}
+                        className="px-4 py-3 text-sm font-medium text-slate-200 hover:text-white hover:bg-white/5 rounded-xl transition-colors text-left flex items-center gap-2"
+                      >
+                        🧑‍💻 Lihat Profil Saya
+                      </Link>
+                      <Link
+                        href="/settings"
+                        onClick={() => setIsOpen(false)}
+                        className="px-4 py-3 text-sm font-medium text-slate-200 hover:text-white hover:bg-white/5 rounded-xl transition-colors text-left flex items-center gap-2"
+                      >
+                        ⚙️ Pengaturan Akun
+                      </Link>
+                    </>
+                  ) : (
+                    <div className="px-4 py-2 text-xs font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-xl mx-1 mb-1 text-center">
+                      ⏳ Menunggu Verifikasi
+                    </div>
+                  )}
 
                   <div className="h-px w-full bg-slate-700/50 my-1"></div>
 
