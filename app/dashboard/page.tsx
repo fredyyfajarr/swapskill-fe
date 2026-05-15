@@ -1,29 +1,36 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import api from '@/lib/axios';
 import { useRouter } from 'next/navigation';
 import Modal from '@/components/Modal';
 import PostCard from '@/components/PostCard';
 import toast from 'react-hot-toast';
+import type { Post } from '@/features/posts/domain/post';
+import type { Skill } from '@/features/skills/domain/skill';
+import type { CurrentUser } from '@/features/users/domain/user';
+import {
+  createPost,
+  listPostRecommendations,
+  listPosts,
+} from '@/features/posts/infrastructure/postRepository';
+import { listSkills } from '@/features/skills/infrastructure/skillRepository';
+import { createReview } from '@/features/reviews/infrastructure/reviewRepository';
+import { getCurrentUser } from '@/features/users/infrastructure/profileRepository';
 
-interface Skill {
-  id: number;
-  name: string;
-}
-interface Post {
-  id: number;
-  description: string;
-  user: { name: string; id: number; whatsapp_number: string };
-  needed_skill: { name: string };
-  offered_skill: { name: string };
-  created_at: string;
-  is_bookmarked?: boolean; // Dikembalikan
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    const response = (error as { response?: { data?: { message?: string } } })
+      .response;
+
+    return response?.data?.message ?? fallback;
+  }
+
+  return fallback;
 }
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<CurrentUser | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -84,8 +91,7 @@ export default function DashboardPage() {
 
   const fetchUser = async () => {
     try {
-      const res = await api.get('/profile');
-      setUser(res.data.data);
+      setUser(await getCurrentUser());
     } catch (error) {
       console.error('Gagal memuat profil');
     }
@@ -96,20 +102,18 @@ export default function DashboardPage() {
     else setLoading(true);
 
     try {
-      const res = await api.get('/posts', {
-        params: {
-          search: query,
-          page: pageNum,
-          skill_id: selectedSkill,
-          sort: sortBy,
-          bookmarked: showBookmarksOnly ? 1 : 0, // Parameter API Bookmark
-        },
+      const result = await listPosts({
+        search: query,
+        page: pageNum,
+        skillId: selectedSkill,
+        sortBy,
+        bookmarkedOnly: showBookmarksOnly,
       });
 
-      if (isLoadMore) setPosts((prev) => [...prev, ...res.data.data]);
-      else setPosts(res.data.data);
+      if (isLoadMore) setPosts((prev) => [...prev, ...result.data]);
+      else setPosts(result.data);
 
-      setHasMore(res.data.has_more);
+      setHasMore(result.hasMore);
       setPage(pageNum);
     } catch (error) {
       console.error('Gagal mengambil postingan', error);
@@ -121,8 +125,7 @@ export default function DashboardPage() {
 
   const fetchRecommendations = async () => {
     try {
-      const res = await api.get('/posts/recommendations');
-      setRecommendations(res.data.data);
+      setRecommendations(await listPostRecommendations());
     } catch (error) {
       console.error('Gagal memuat rekomendasi');
     }
@@ -130,8 +133,7 @@ export default function DashboardPage() {
 
   const fetchSkills = async () => {
     try {
-      const res = await api.get('/skills');
-      setSkills(res.data.data);
+      setSkills(await listSkills());
     } catch (error) {
       console.error('Gagal mengambil skill');
     }
@@ -145,13 +147,13 @@ export default function DashboardPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.post('/posts', newPost);
+      await createPost(newPost);
       setIsModalOpen(false);
       setNewPost({ needed_skill: '', offered_skill: '', description: '' });
       fetchPosts();
       toast.success('Mantap! Tawaran bartermu sudah diposting.');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Gagal membuat postingan');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Gagal membuat postingan'));
     } finally {
       setIsSubmitting(false);
     }
@@ -162,17 +164,16 @@ export default function DashboardPage() {
     e.preventDefault();
     setIsSubmittingReview(true);
     try {
-      // Pastikan endpoint review di Laravel kamu adalah /reviews
-      await api.post('/reviews', {
-        reviewed_id: reviewData.user_id,
+      await createReview({
+        reviewee_id: reviewData.user_id,
         rating: reviewData.rating,
         comment: reviewData.comment,
       });
       toast.success('Ulasan berhasil dikirim!');
       setIsReviewModalOpen(false);
       setReviewData({ user_id: '', rating: 5, comment: '' });
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Gagal mengirim ulasan');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Gagal mengirim ulasan'));
     } finally {
       setIsSubmittingReview(false);
     }
@@ -292,7 +293,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {recommendations.map((p) => (
-                      <PostCard key={p.id} post={p} />
+                      <PostCard key={p.id} post={p} currentUser={user ?? undefined} />
                     ))}
                   </div>
                   <div className="h-px bg-slate-800 my-10"></div>
@@ -300,7 +301,7 @@ export default function DashboardPage() {
               )}
 
             {filteredPosts.map((p) => (
-              <PostCard key={p.id} post={p} />
+              <PostCard key={p.id} post={p} currentUser={user ?? undefined} />
             ))}
 
             {hasMore && searchQuery === '' && (

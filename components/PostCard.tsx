@@ -1,26 +1,32 @@
 'use client';
 
 import { useState } from 'react';
-import api from '@/lib/axios';
 import toast from 'react-hot-toast';
+import { togglePostBookmark } from '@/features/bookmarks/infrastructure/bookmarkRepository';
+import type { Post } from '@/features/posts/domain/post';
+import type { CurrentUser } from '@/features/users/domain/user';
 
 export default function PostCard({
   post,
   currentUser,
+  onBookmarkChange,
 }: {
-  post: any;
-  currentUser?: any;
+  post: Post;
+  currentUser?: CurrentUser;
+  onBookmarkChange?: (postId: number, isBookmarked: boolean) => void;
 }) {
   const [isBookmarked, setIsBookmarked] = useState(post.is_bookmarked || false);
 
   const toggleBookmark = async () => {
     try {
-      await api.post(`/posts/${post.id}/bookmark`);
-      setIsBookmarked(!isBookmarked);
+      await togglePostBookmark(post.id);
+      const nextBookmarked = !isBookmarked;
+      setIsBookmarked(nextBookmarked);
+      onBookmarkChange?.(post.id, nextBookmarked);
       toast.success(
         !isBookmarked ? 'Disimpan ke Bookmark 🔖' : 'Dihapus dari Bookmark 🗑️',
       );
-    } catch (error) {
+    } catch {
       toast.error('Gagal menyimpan bookmark.');
     }
   };
@@ -111,7 +117,7 @@ export default function PostCard({
       {/* DESKRIPSI (flex-grow agar mengisi ruang kosong dan meratakan tombol bawah) */}
       <div className="flex-grow flex flex-col">
         <p className="text-slate-300 text-sm leading-relaxed bg-slate-900/30 p-4 rounded-xl border border-slate-700/30 h-full">
-          "{post.description}"
+          &quot;{post.description}&quot;
         </p>
       </div>
 

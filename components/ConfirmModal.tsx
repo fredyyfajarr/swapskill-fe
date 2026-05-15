@@ -9,7 +9,7 @@ interface ConfirmModalProps {
   title: string;
   message: string;
   confirmText?: string;
-  type?: 'danger' | 'primary';
+  type?: 'danger' | 'primary' | 'success' | 'warning';
   isLoading?: boolean;
 }
 
@@ -41,7 +41,11 @@ export default function ConfirmModal({
             className={`flex-1 py-3 font-bold rounded-xl transition-all shadow-lg ${
               type === 'danger'
                 ? 'bg-red-600 hover:bg-red-500 text-white'
-                : 'bg-blue-600 hover:bg-blue-500 text-white'
+                : type === 'success'
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                  : type === 'warning'
+                    ? 'bg-amber-600 hover:bg-amber-500 text-white'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white'
             } disabled:opacity-50`}
           >
             {isLoading ? 'Memproses...' : confirmText}
