@@ -1,36 +1,162 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SwapSkill Frontend
 
-## Getting Started
+Frontend web untuk SwapSkill, aplikasi barter keahlian mahasiswa. Aplikasi ini menyediakan landing page, autentikasi, dashboard skill board, profil, bookmark, review, notifikasi, dan pengaturan akun.
 
-First, run the development server:
+## Tech Stack
+
+- Next.js 16 App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Axios
+- Framer Motion
+- React Hot Toast
+- ESLint 9
+
+## Fitur Utama
+
+- Landing page SwapSkill.
+- Register dan login mahasiswa.
+- Token-based auth menggunakan backend Laravel Sanctum.
+- Dashboard skill board dengan search, filter skill, bookmark, rekomendasi barter, dan load more.
+- Buat tawaran barter berdasarkan skill yang dibutuhkan dan skill yang ditawarkan.
+- Review partner barter.
+- Profil sendiri dengan portofolio skill dan riwayat tawaran.
+- Profil publik user lain.
+- Notification bell untuk aktivitas seperti bookmark dan review.
+- Settings untuk update profil dan password.
+
+## Struktur Project
+
+Project mulai diarahkan ke arsitektur feature-based yang sejalan dengan Clean Architecture pragmatis di frontend:
+
+```text
+app/                         # Route dan page Next.js
+components/                  # Komponen UI reusable
+features/
+├── bookmarks/               # Infrastruktur bookmark
+├── posts/                   # Domain type dan repository post
+├── reviews/                 # Infrastruktur review
+├── shared/                  # Shared infrastructure, seperti API client
+├── skills/                  # Domain type dan repository skill
+└── users/                   # Domain type dan repository user/profile
+lib/                         # Compatibility export untuk API client lama
+public/                      # Asset statis
+```
+
+Pedoman singkat:
+
+- Page dan component fokus ke UI dan state interaksi.
+- API call diletakkan di `features/*/infrastructure`.
+- Type/domain model diletakkan di `features/*/domain`.
+- Axios client bersama ada di `features/shared/infrastructure/http/apiClient.ts`.
+- `lib/axios.ts` tetap ada sebagai compatibility layer untuk kode lama.
+
+## Instalasi Lokal
+
+Clone repo:
+
+```bash
+git clone https://github.com/fredyyfajarr/swapskill-fe.git
+cd swapskill-fe
+```
+
+Install dependency:
+
+```bash
+npm install
+```
+
+Buat file `.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api
+```
+
+Jalankan development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Frontend default berjalan di:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Backend yang Dibutuhkan
 
-## Learn More
+Frontend ini membutuhkan backend SwapSkill:
 
-To learn more about Next.js, take a look at the following resources:
+```text
+https://github.com/fredyyfajarr/swapskill-be
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Backend lokal biasanya berjalan di:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```text
+http://127.0.0.1:8000
+```
 
-## Deploy on Vercel
+Pastikan `.env.local` frontend mengarah ke endpoint API backend:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```env
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Akun Test Lokal
+
+Jika backend dijalankan dengan seeder terbaru, gunakan akun:
+
+```text
+email: test@swapskill.test
+password: password
+```
+
+Akun ini sudah verified sehingga bisa langsung mengakses dashboard.
+
+## Script
+
+```bash
+npm run dev      # menjalankan development server
+npm run build    # build production
+npm run start    # menjalankan hasil build
+npm run lint     # menjalankan ESLint
+```
+
+Di Windows PowerShell, jika `npm` terkena execution policy, gunakan:
+
+```powershell
+npm.cmd run dev
+npm.cmd run build
+npm.cmd run lint
+```
+
+## Alur Development Lokal
+
+1. Jalankan backend Laravel di `http://127.0.0.1:8000`.
+2. Pastikan frontend punya `.env.local` dengan `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api`.
+3. Jalankan frontend dengan `npm run dev`.
+4. Buka `http://localhost:3000`.
+5. Login menggunakan akun test atau akun hasil register.
+
+## Catatan Next.js 16
+
+Project menggunakan Next.js 16. Perhatikan perubahan konvensi terbaru, termasuk warning bahwa `middleware.ts` mulai diarahkan ke konvensi `proxy`. Saat ini file `middleware.ts` masih dipakai untuk proteksi route sesuai kondisi project.
+
+## Deploy
+
+Untuk deploy frontend, set environment variable berikut di platform hosting:
+
+```env
+NEXT_PUBLIC_API_URL=https://domain-backend-kamu.com/api
+```
+
+Lalu jalankan build production:
+
+```bash
+npm run build
+```
+
+Pastikan backend mengizinkan origin frontend melalui konfigurasi CORS Laravel.
