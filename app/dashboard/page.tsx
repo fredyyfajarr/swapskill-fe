@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import useSWR from 'swr';
+import useSWRInfinite from 'swr/infinite';
+import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '@/components/Modal';
 import PostCard from '@/components/PostCard';
 import toast from 'react-hot-toast';
 import type { Post } from '@/features/posts/domain/post';
-import type { Skill } from '@/features/skills/domain/skill';
-import type { CurrentUser } from '@/features/users/domain/user';
 import {
   createPost,
   listPostRecommendations,
@@ -30,14 +31,36 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [skills, setSkills] = useState<Skill[]>([]);
+
+  const { data: user, error: userError, isLoading: isLoadingUser } = useSWR('currentUser', getCurrentUser);
+  const { data: skills = [], isLoading: isLoadingSkills } = useSWR('skills', listSkills);
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [selectedSkill, setSelectedSkill] = useState('');
+  const [sortBy, setSortBy] = useState('latest');
+  const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
+
+  // useSWRInfinite for pagination
+  const getKey = (pageIndex: number, previousPageData: any) => {
+    if (!user?.is_verified) return null;
+    if (previousPageData && !previousPageData.hasMore) return null; // reached the end
+    return ['posts', { search: searchQuery, page: pageIndex + 1, skillId: selectedSkill, sortBy, bookmarkedOnly: showBookmarksOnly }];
+  };
+
+  const { data: postsData, error: postsError, size, setSize, isValidating, mutate: mutatePosts } = useSWRInfinite(
+    getKey,
+    ([_, params]) => listPosts(params)
+  );
+
+  const posts: Post[] = postsData ? postsData.flatMap((page) => page.data) : [];
+  const isLoadingInitialData = !postsData && !postsError;
+  const isLoadingMore = isLoadingInitialData || (size > 0 && postsData && typeof postsData[size - 1] === 'undefined');
+  const hasMore = postsData?.[postsData.length - 1]?.hasMore ?? false;
+
+  const { data: recommendations = [], mutate: mutateRecommendations } = useSWR(
+    user?.is_verified ? 'recommendations' : null,
+    listPostRecommendations
+  );
 
   // State Modal Buat Tawaran
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -57,90 +80,14 @@ export default function DashboardPage() {
     comment: '',
   });
 
-  const [recommendations, setRecommendations] = useState<Post[]>([]);
-  const [selectedSkill, setSelectedSkill] = useState('');
-  const [sortBy, setSortBy] = useState('latest');
-
-  // Filter Bookmark (Dikembalikan)
-  const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
-
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    if (userError) {
       router.push('/login');
-      return;
     }
-    fetchUser();
-  }, [router]);
-
-  useEffect(() => {
-    if (user?.is_verified) {
-      fetchPosts('', 1, false);
-      fetchSkills();
-      fetchRecommendations();
-    } else if (user) {
-      setLoading(false);
-    }
-  }, [user?.is_verified]);
-
-  useEffect(() => {
-    if (user?.is_verified) {
-      fetchPosts('', 1, false);
-    }
-  }, [selectedSkill, sortBy, showBookmarksOnly]); // showBookmarksOnly masuk ke trigger
-
-  const fetchUser = async () => {
-    try {
-      setUser(await getCurrentUser());
-    } catch (error) {
-      console.error('Gagal memuat profil');
-    }
-  };
-
-  const fetchPosts = async (query = '', pageNum = 1, isLoadMore = false) => {
-    if (isLoadMore) setIsLoadingMore(true);
-    else setLoading(true);
-
-    try {
-      const result = await listPosts({
-        search: query,
-        page: pageNum,
-        skillId: selectedSkill,
-        sortBy,
-        bookmarkedOnly: showBookmarksOnly,
-      });
-
-      if (isLoadMore) setPosts((prev) => [...prev, ...result.data]);
-      else setPosts(result.data);
-
-      setHasMore(result.hasMore);
-      setPage(pageNum);
-    } catch (error) {
-      console.error('Gagal mengambil postingan', error);
-    } finally {
-      setLoading(false);
-      setIsLoadingMore(false);
-    }
-  };
-
-  const fetchRecommendations = async () => {
-    try {
-      setRecommendations(await listPostRecommendations());
-    } catch (error) {
-      console.error('Gagal memuat rekomendasi');
-    }
-  };
-
-  const fetchSkills = async () => {
-    try {
-      setSkills(await listSkills());
-    } catch (error) {
-      console.error('Gagal mengambil skill');
-    }
-  };
+  }, [userError, router]);
 
   const handleLoadMore = () => {
-    if (!isLoadingMore && hasMore) fetchPosts('', page + 1, true);
+    setSize(size + 1);
   };
 
   const handleCreatePost = async (e: React.FormEvent) => {
@@ -150,7 +97,7 @@ export default function DashboardPage() {
       await createPost(newPost);
       setIsModalOpen(false);
       setNewPost({ needed_skill: '', offered_skill: '', description: '' });
-      fetchPosts();
+      mutatePosts();
       toast.success('Mantap! Tawaran bartermu sudah diposting.');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Gagal membuat postingan'));
@@ -179,39 +126,38 @@ export default function DashboardPage() {
     }
   };
 
-  const filteredPosts = posts.filter((post) => {
-    const query = searchQuery.toLowerCase();
+  if (isLoadingUser) {
     return (
-      post.needed_skill?.name.toLowerCase().includes(query) ||
-      post.offered_skill?.name.toLowerCase().includes(query) ||
-      post.description.toLowerCase().includes(query) ||
-      post.user?.name.toLowerCase().includes(query)
-    );
-  });
-
-  if (loading && !user)
-    return (
-      <div className="text-center mt-20 text-slate-500 animate-pulse">
-        Menghubungkan ke server...
+      <div className="max-w-3xl mx-auto mt-8 px-4 pb-20 space-y-6">
+        <div className="h-24 bg-card/40 rounded-2xl animate-pulse"></div>
+        <div className="h-16 bg-card/40 rounded-2xl animate-pulse"></div>
+        <div className="space-y-4">
+          <div className="h-48 bg-card/40 rounded-3xl animate-pulse"></div>
+          <div className="h-48 bg-card/40 rounded-3xl animate-pulse"></div>
+        </div>
       </div>
     );
+  }
 
   return (
-    <div className="max-w-3xl mx-auto mt-8 px-4 pb-20">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="max-w-3xl mx-auto mt-8 px-4 pb-20 text-foreground"
+    >
       {/* BANNER NOTIFIKASI VERIFIKASI */}
       {user && !user.is_verified && (
-        <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="mb-8">
           <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center gap-4 shadow-lg shadow-amber-900/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl rounded-full pointer-events-none"></div>
             <div className="text-4xl text-amber-500">⏳</div>
             <div className="flex-1">
-              {/* BUG FIX: Nama sekarang dinamis mengambil dari database user */}
-              <h3 className="text-amber-400 font-bold text-lg mb-1 tracking-tight">
+              <h3 className="text-amber-500 font-bold text-lg mb-1 tracking-tight">
                 Halo {user?.name || 'Mahasiswa'}, Akunmu Sedang Diverifikasi
               </h3>
-              <p className="text-amber-200/70 text-sm leading-relaxed">
+              <p className="text-amber-500/70 text-sm leading-relaxed">
                 Admin sedang mengecek data KTM kamu.{' '}
-                <strong className="text-amber-300">
+                <strong className="text-amber-500">
                   Feeds tawaran barter akan terbuka otomatis setelah akunmu
                   disetujui via WhatsApp.
                 </strong>
@@ -224,7 +170,7 @@ export default function DashboardPage() {
       {user?.is_verified ? (
         <>
           {/* SEARCH & FILTER AREA */}
-          <div className="bg-slate-800/40 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-4 mb-8">
+          <div className="bg-card/40 backdrop-blur-xl border border-border rounded-2xl p-4 mb-8">
             <div className="flex flex-col md:flex-row gap-3">
               <div className="relative group flex-1">
                 <input
@@ -232,13 +178,13 @@ export default function DashboardPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Cari keahlian mahasiswa..."
-                  className="w-full bg-slate-900/50 border border-slate-700/50 text-white text-sm rounded-xl pl-12 pr-10 py-3 outline-none focus:border-blue-500 transition-all"
+                  className="w-full bg-background border border-border text-foreground text-sm rounded-xl pl-4 pr-10 py-3 outline-none focus:border-primary transition-all"
                 />
               </div>
               <select
                 value={selectedSkill}
                 onChange={(e) => setSelectedSkill(e.target.value)}
-                className="bg-slate-900/50 border border-slate-700 text-white text-sm rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition-colors md:w-44"
+                className="bg-background border border-border text-foreground text-sm rounded-xl px-4 py-3 outline-none focus:border-primary transition-colors md:w-44"
               >
                 <option value="">Semua Skill</option>
                 {skills.map((s) => (
@@ -249,17 +195,16 @@ export default function DashboardPage() {
               </select>
             </div>
 
-            {/* BUG FIX: Tombol Toggle Bookmark Dikembalikan */}
-            <div className="flex mt-3 gap-2 border-t border-slate-700/50 pt-3">
+            <div className="flex mt-3 gap-2 border-t border-border pt-3">
               <button
                 onClick={() => setShowBookmarksOnly(false)}
-                className={`text-xs font-bold px-4 py-2 rounded-lg transition-colors ${!showBookmarksOnly ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                className={`text-xs font-bold px-4 py-2 rounded-lg transition-colors ${!showBookmarksOnly ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}
               >
                 🌐 Semua Post
               </button>
               <button
                 onClick={() => setShowBookmarksOnly(true)}
-                className={`text-xs font-bold px-4 py-2 rounded-lg transition-colors ${showBookmarksOnly ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
+                className={`text-xs font-bold px-4 py-2 rounded-lg transition-colors ${showBookmarksOnly ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}
               >
                 🔖 Disimpan
               </button>
@@ -267,17 +212,16 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex justify-between items-center mb-6">
-            {/* BUG FIX: Tombol Beri Ulasan Dikembalikan */}
             <button
               onClick={() => setIsReviewModalOpen(true)}
-              className="px-5 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-2xl border border-slate-700 transition-all flex items-center gap-2"
+              className="px-5 py-3.5 bg-secondary hover:bg-secondary/80 text-foreground font-bold rounded-2xl border border-border transition-all flex items-center gap-2"
             >
               <span>⭐</span> Beri Ulasan
             </button>
 
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg transition-all transform hover:-translate-y-0.5"
+              className="px-6 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-2xl shadow-lg transition-all transform hover:-translate-y-0.5"
             >
               + Buat Tawaran
             </button>
@@ -288,7 +232,7 @@ export default function DashboardPage() {
               searchQuery === '' &&
               !showBookmarksOnly && (
                 <div className="mb-12">
-                  <div className="flex items-center gap-2 mb-6 text-white font-bold text-xl">
+                  <div className="flex items-center gap-2 mb-6 text-foreground font-bold text-xl">
                     ✨ Rekomendasi Jodoh Barter
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -296,22 +240,37 @@ export default function DashboardPage() {
                       <PostCard key={p.id} post={p} currentUser={user ?? undefined} />
                     ))}
                   </div>
-                  <div className="h-px bg-slate-800 my-10"></div>
+                  <div className="h-px bg-border my-10"></div>
                 </div>
               )}
 
-            {filteredPosts.map((p) => (
-              <PostCard key={p.id} post={p} currentUser={user ?? undefined} />
-            ))}
+            <AnimatePresence>
+              {isLoadingInitialData && (
+                <div className="space-y-4">
+                  <div className="h-48 bg-card/40 rounded-3xl animate-pulse"></div>
+                  <div className="h-48 bg-card/40 rounded-3xl animate-pulse"></div>
+                </div>
+              )}
+              {posts.map((p) => (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                >
+                  <PostCard post={p} currentUser={user ?? undefined} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
 
             {hasMore && searchQuery === '' && (
               <div className="flex justify-center pt-8">
                 <button
                   onClick={handleLoadMore}
-                  disabled={isLoadingMore}
-                  className="px-8 py-3 bg-slate-800 text-slate-300 font-bold rounded-2xl border border-slate-700 transition-all disabled:opacity-50"
+                  disabled={isValidating}
+                  className="px-8 py-3 bg-secondary text-foreground font-bold rounded-2xl border border-border transition-all disabled:opacity-50"
                 >
-                  {isLoadingMore ? '⏳ Memuat...' : '👇 Muat Lebih Banyak'}
+                  {isValidating ? '⏳ Memuat...' : '👇 Muat Lebih Banyak'}
                 </button>
               </div>
             )}
@@ -319,14 +278,14 @@ export default function DashboardPage() {
         </>
       ) : (
         /* PLACEHOLDER MODE TERKUNCI */
-        <div className="flex flex-col items-center justify-center py-24 bg-slate-800/20 border border-slate-700/30 rounded-[3rem] mt-4">
+        <div className="flex flex-col items-center justify-center py-24 bg-secondary/20 border border-border rounded-[3rem] mt-4">
           <div className="text-7xl mb-6 filter drop-shadow-[0_0_15px_rgba(251,191,36,0.2)] grayscale opacity-50">
             🔒
           </div>
-          <h2 className="text-xl font-bold text-white mb-2 tracking-tight uppercase">
+          <h2 className="text-xl font-bold text-foreground mb-2 tracking-tight uppercase">
             Akses Terbatas
           </h2>
-          <p className="text-slate-500 text-center max-w-sm px-6">
+          <p className="text-muted-foreground text-center max-w-sm px-6">
             Konten feeds khusus mahasiswa akan terbuka setelah verifikasi KTM
             selesai.
           </p>
@@ -341,14 +300,14 @@ export default function DashboardPage() {
       >
         <form onSubmit={handleCreatePost} className="space-y-5">
           <div className="space-y-1">
-            <label className="text-sm font-semibold text-slate-400 ml-1">
+            <label className="text-sm font-semibold text-muted-foreground ml-1">
               Saya butuh bantuan:
             </label>
             <input
               list="skills-list"
               required
               placeholder="Cari skill..."
-              className="w-full p-4 bg-slate-900 border border-slate-700 rounded-2xl text-white outline-none focus:border-blue-500"
+              className="w-full p-4 bg-background border border-border rounded-2xl text-foreground outline-none focus:border-primary"
               value={newPost.needed_skill}
               onChange={(e) =>
                 setNewPost({ ...newPost, needed_skill: e.target.value })
@@ -356,14 +315,14 @@ export default function DashboardPage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-semibold text-slate-400 ml-1">
+            <label className="text-sm font-semibold text-muted-foreground ml-1">
               Sebagai gantinya:
             </label>
             <input
               list="skills-list"
               required
               placeholder="Keahlian saya..."
-              className="w-full p-4 bg-slate-900 border border-slate-700 rounded-2xl text-white outline-none focus:border-emerald-500"
+              className="w-full p-4 bg-background border border-border rounded-2xl text-foreground outline-none focus:border-emerald-500"
               value={newPost.offered_skill}
               onChange={(e) =>
                 setNewPost({ ...newPost, offered_skill: e.target.value })
@@ -376,14 +335,14 @@ export default function DashboardPage() {
             ))}
           </datalist>
           <div className="space-y-1">
-            <label className="text-sm font-semibold text-slate-400 ml-1">
+            <label className="text-sm font-semibold text-muted-foreground ml-1">
               Deskripsi:
             </label>
             <textarea
               required
               rows={4}
               placeholder="Jelaskan kebutuhanmu..."
-              className="w-full p-4 bg-slate-900 border border-slate-700 rounded-2xl text-white outline-none focus:border-blue-500"
+              className="w-full p-4 bg-background border border-border rounded-2xl text-foreground outline-none focus:border-primary"
               value={newPost.description}
               onChange={(e) =>
                 setNewPost({ ...newPost, description: e.target.value })
@@ -393,14 +352,14 @@ export default function DashboardPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg disabled:bg-slate-600"
+            className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-2xl shadow-lg disabled:bg-secondary"
           >
             {isSubmitting ? 'Memposting...' : 'Posting Sekarang'}
           </button>
         </form>
       </Modal>
 
-      {/* BUG FIX: MODAL BERI ULASAN DIKEMBALIKAN */}
+      {/* MODAL BERI ULASAN */}
       <Modal
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
@@ -408,14 +367,14 @@ export default function DashboardPage() {
       >
         <form onSubmit={handleReviewSubmit} className="space-y-5">
           <div className="space-y-1">
-            <label className="text-sm font-semibold text-slate-400 ml-1">
+            <label className="text-sm font-semibold text-muted-foreground ml-1">
               ID User Partner:
             </label>
             <input
               type="text"
               required
               placeholder="Masukkan ID User yang dibarter..."
-              className="w-full p-4 bg-slate-900 border border-slate-700 rounded-2xl text-white outline-none focus:border-amber-500"
+              className="w-full p-4 bg-background border border-border rounded-2xl text-foreground outline-none focus:border-amber-500"
               value={reviewData.user_id}
               onChange={(e) =>
                 setReviewData({ ...reviewData, user_id: e.target.value })
@@ -423,7 +382,7 @@ export default function DashboardPage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-semibold text-slate-400 ml-1">
+            <label className="text-sm font-semibold text-muted-foreground ml-1">
               Rating (1-5):
             </label>
             <input
@@ -431,7 +390,7 @@ export default function DashboardPage() {
               min="1"
               max="5"
               required
-              className="w-full p-4 bg-slate-900 border border-slate-700 rounded-2xl text-white outline-none focus:border-amber-500"
+              className="w-full p-4 bg-background border border-border rounded-2xl text-foreground outline-none focus:border-amber-500"
               value={reviewData.rating}
               onChange={(e) =>
                 setReviewData({ ...reviewData, rating: Number(e.target.value) })
@@ -439,14 +398,14 @@ export default function DashboardPage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-semibold text-slate-400 ml-1">
+            <label className="text-sm font-semibold text-muted-foreground ml-1">
               Komentar:
             </label>
             <textarea
               required
               rows={3}
               placeholder="Bagaimana pengalamanmu berkolaborasi dengan dia?"
-              className="w-full p-4 bg-slate-900 border border-slate-700 rounded-2xl text-white outline-none focus:border-amber-500"
+              className="w-full p-4 bg-background border border-border rounded-2xl text-foreground outline-none focus:border-amber-500"
               value={reviewData.comment}
               onChange={(e) =>
                 setReviewData({ ...reviewData, comment: e.target.value })
@@ -456,12 +415,12 @@ export default function DashboardPage() {
           <button
             type="submit"
             disabled={isSubmittingReview}
-            className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl shadow-lg disabled:bg-slate-600"
+            className="w-full py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-2xl shadow-lg disabled:bg-secondary"
           >
             {isSubmittingReview ? 'Mengirim...' : 'Kirim Ulasan'}
           </button>
         </form>
       </Modal>
-    </div>
+    </motion.div>
   );
 }

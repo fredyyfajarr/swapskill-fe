@@ -6,17 +6,16 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import ConfirmModal from './ConfirmModal';
 import NotificationBell from './NotificationBell';
-import api from '@/lib/axios'; // Tambahan import axios
+import api from '@/lib/axios';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [user, setUser] = useState<any>(null); // State untuk data user
+  const [user, setUser] = useState<any>(null);
   const router = useRouter();
 
   const hamburgerRef = useRef<HTMLDivElement>(null);
 
-  // Ambil data user untuk mengecek status verifikasi di Navbar
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -100,6 +99,13 @@ export default function Navbar() {
                         className="px-4 py-3 text-sm font-medium text-slate-200 hover:text-white hover:bg-white/5 rounded-xl transition-colors text-left flex items-center gap-2"
                       >
                         🧑‍💻 Lihat Profil Saya
+                      </Link>
+                      <Link
+                        href="/messages"
+                        onClick={() => setIsOpen(false)}
+                        className="px-4 py-3 text-sm font-medium text-slate-200 hover:text-white hover:bg-white/5 rounded-xl transition-colors text-left flex items-center gap-2"
+                      >
+                        💬 Pesan / Chat
                       </Link>
                       <Link
                         href="/settings"

@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 // 1. IMPORT TOASTER DARI REACT-HOT-TOAST
 import { Toaster } from 'react-hot-toast';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -17,37 +18,44 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        {/* 2. PASANG TOASTER DI SINI (DENGAN TEMA DARK) */}
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            // Desain bawaan untuk semua toast
-            style: {
-              background: '#1e293b', // Warna slate-800
-              color: '#fff',
-              border: '1px solid #334155', // Warna slate-700
-              borderRadius: '16px',
-            },
-            // Desain khusus jika sukses
-            success: {
-              iconTheme: {
-                primary: '#10b981', // Emerald 500
-                secondary: '#fff',
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.className} bg-background text-foreground antialiased`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {/* 2. PASANG TOASTER DI SINI (DENGAN TEMA DARK) */}
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              // Desain bawaan untuk semua toast
+              style: {
+                background: '#1e293b', // Warna slate-800
+                color: '#fff',
+                border: '1px solid #334155', // Warna slate-700
+                borderRadius: '16px',
               },
-            },
-            // Desain khusus jika error
-            error: {
-              iconTheme: {
-                primary: '#ef4444', // Red 500
-                secondary: '#fff',
+              // Desain khusus jika sukses
+              success: {
+                iconTheme: {
+                  primary: '#10b981', // Emerald 500
+                  secondary: '#fff',
+                },
               },
-            },
-          }}
-        />
+              // Desain khusus jika error
+              error: {
+                iconTheme: {
+                  primary: '#ef4444', // Red 500
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
 
-        {children}
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
