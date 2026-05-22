@@ -1,315 +1,244 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { ArrowRightLeft, Users, Shield, MessageCircle, Zap, ChevronRight, Star } from 'lucide-react';
 
 export default function LandingPage() {
-  const [activeFaq, setActiveFaq] = useState<number | null>(null);
-
-  const skills = [
-    '🚀 Laravel 13',
-    '⚛️ Next.js 16',
-    '🎨 UI/UX Design',
-    '📱 Flutter',
-    '🐍 Python',
-    '📸 Photography',
-    '✍️ Copywriting',
-    '📊 Digital Marketing',
-    '🎬 Video Editing',
-    '🛠️ Web Development',
-    '💡 Business Strategy',
-  ];
-
-  const stats = [
-    { label: 'Mahasiswa Bergabung', value: '500+' },
-    { label: 'Tawaran Barter', value: '1,200+' },
-    { label: 'Kepuasan User', value: '4.9/5' },
-  ];
-
-  const faqs = [
+  const features = [
     {
-      q: 'Bagaimana jika saya belum ahli di suatu bidang?',
-      a: "Tidak masalah! Barter skill tidak selalu tentang tingkat 'expert'. Kamu bisa menawarkan bantuan dasar seperti input data, transkrip, atau bantuan tugas umum lainnya.",
+      icon: <ArrowRightLeft size={24} />,
+      title: 'Barter Skill',
+      desc: 'Tukar keahlianmu dengan mahasiswa lain. Tidak perlu biaya — cukup saling berbagi ilmu.',
+      color: 'from-blue-500 to-blue-600',
+      glow: 'shadow-blue-500/20',
     },
     {
-      q: 'Apakah data nomor WhatsApp saya aman?',
-      a: 'Nomor WhatsApp hanya akan ditampilkan kepada pengguna yang sudah login untuk memfasilitasi komunikasi barter. Kami menyarankan untuk tetap berhati-hati saat berinteraksi.',
+      icon: <Shield size={24} />,
+      title: 'Terverifikasi KTM',
+      desc: 'Semua pengguna diverifikasi melalui KTM. Hanya mahasiswa asli yang bisa bertransaksi.',
+      color: 'from-emerald-500 to-emerald-600',
+      glow: 'shadow-emerald-500/20',
     },
     {
-      q: 'Apakah platform ini benar-benar gratis?',
-      a: '100% Gratis. Misi utama SwapSkill adalah membantu mahasiswa berkembang tanpa terkendala biaya.',
+      icon: <MessageCircle size={24} />,
+      title: 'Chat In-App',
+      desc: 'Komunikasi langsung di dalam aplikasi. Diskusi kebutuhan barter tanpa pindah platform.',
+      color: 'from-purple-500 to-purple-600',
+      glow: 'shadow-purple-500/20',
+    },
+    {
+      icon: <Star size={24} />,
+      title: 'Sistem Reputasi',
+      desc: 'Beri dan terima ulasan setelah selesai barter. Reputasi tinggi = kepercayaan lebih.',
+      color: 'from-amber-500 to-amber-600',
+      glow: 'shadow-amber-500/20',
     },
   ];
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-slate-200 overflow-x-hidden relative">
-      {/* Background Ornaments */}
-      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[150px] pointer-events-none"></div>
-
-      {/* Navbar */}
-      <nav className="relative z-30 flex items-center justify-between px-6 md:px-12 py-6 max-w-7xl mx-auto">
-        <div className="text-2xl font-black text-white tracking-tight">
-          Swap<span className="text-blue-500">Skill</span>
-        </div>
-        <div className="flex gap-4 items-center">
-          <Link
-            href="/login"
-            className="text-sm font-bold text-slate-300 hover:text-white transition-colors"
-          >
-            Masuk
-          </Link>
-          <Link
-            href="/register"
-            className="text-sm font-bold bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-full transition-all shadow-lg shadow-blue-900/50"
-          >
-            Daftar
-          </Link>
+    <div className="min-h-screen bg-background bg-mesh text-foreground overflow-hidden">
+      {/* NAVBAR */}
+      <nav className="fixed top-0 left-0 right-0 z-50 glass-strong">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <Zap size={16} className="text-white" />
+            </div>
+            <span className="text-lg font-bold text-white tracking-tight">
+              Swap<span className="gradient-text">Skill</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/login" className="text-sm text-slate-400 hover:text-white font-medium transition-colors px-4 py-2">
+              Masuk
+            </Link>
+            <Link href="/register" className="text-sm bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold px-5 py-2 rounded-xl shadow-lg shadow-blue-500/20 btn-shine transition-all hover:shadow-blue-500/30">
+              Daftar
+            </Link>
+          </div>
         </div>
       </nav>
 
-      {/* 1. Hero Section with UNPAM Background */}
-      <header className="relative w-full min-h-[90vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/images/unpam.jpg"
-            alt="UNPAM Background"
-            className="w-full h-full object-cover opacity-45"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0f172a]/50 via-transparent to-[#0f172a]"></div>
-        </div>
+      {/* HERO */}
+      <section className="relative pt-32 pb-20 md:pt-44 md:pb-32 px-4">
+        {/* Background orbs */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-[100px] animate-pulse-glow" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-emerald-500/8 rounded-full blur-[120px] animate-pulse-glow" style={{ animationDelay: '1.5s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/5 rounded-full blur-[150px]" />
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="relative z-10 text-center px-4 max-w-5xl mx-auto"
-        >
-          <div className="inline-block px-4 py-1.5 mb-8 rounded-full bg-blue-500/10 border border-blue-500/20 text-sm font-semibold text-blue-400 backdrop-blur-md">
-            🚀 Platform Kolaborasi Mahasiswa #1 di Kampus
-          </div>
-          <h1 className="text-6xl md:text-8xl font-black text-white tracking-tight mb-8 leading-[1.1]">
-            Upgrade Skill <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400">
-              Tanpa Keluar Uang.
-            </span>
-          </h1>
-          <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
-            Butuh bantuan coding? Tawarkan desainmu. SwapSkill memudahkan
-            mahasiswa barter keahlian untuk bangun portofolio dan relasi
-            profesional.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-5 justify-center">
-            <Link
-              href="/register"
-              className="px-10 py-5 bg-blue-600 hover:bg-blue-500 text-white text-lg font-bold rounded-2xl shadow-2xl shadow-blue-600/20 transition-all transform hover:-translate-y-1"
-            >
-              Mulai Barter Sekarang
-            </Link>
-            <Link
-              href="#cara-kerja"
-              className="px-10 py-5 bg-slate-800/50 hover:bg-slate-800 text-white border border-slate-700/50 text-lg font-bold rounded-2xl transition-all backdrop-blur-sm"
-            >
-              Lihat Cara Kerja
-            </Link>
-          </div>
-        </motion.div>
-      </header>
-
-      {/* 2. Stats Section */}
-      <section className="relative z-10 py-12 border-y border-slate-800/50 bg-slate-900/30">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-          {stats.map((stat, idx) => (
-            <div key={idx}>
-              <h3 className="text-4xl font-black text-white mb-1">
-                {stat.value}
-              </h3>
-              <p className="text-slate-500 font-medium uppercase tracking-widest text-xs">
-                {stat.label}
-              </p>
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold mb-8">
+              <Zap size={12} /> Platform Barter Skill #1 untuk Mahasiswa
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* 3. Skill Marquee (Scrolling Badges) */}
-      <section className="py-16 overflow-hidden">
-        <div className="flex gap-8 animate-marquee whitespace-nowrap">
-          {[...skills, ...skills].map((skill, i) => (
-            <span
-              key={i}
-              className="px-6 py-3 bg-slate-800/40 border border-slate-700/50 rounded-2xl text-slate-300 font-bold text-sm backdrop-blur-sm"
-            >
-              {skill}
-            </span>
-          ))}
-        </div>
-      </section>
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-tight mb-6 tracking-tight">
+              Tukar Skill,{' '}
+              <span className="gradient-text">Tumbuh Bersama</span>
+            </h1>
 
-      {/* 4. Feature Bento Grid */}
-      <section id="cara-kerja" className="py-24 max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-black text-white mb-4 tracking-tight">
-            Kenapa Harus SwapSkill?
-          </h2>
-          <p className="text-slate-400">
-            Dirancang khusus untuk ekosistem mahasiswa yang haus ilmu tapi minim
-            budget.
-          </p>
-        </div>
+            <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+              Platform eksklusif mahasiswa untuk bertukar keahlian. Kamu jago ngoding? Tukar dengan desain. Jago statistik? Tukar dengan bahasa Inggris.
+            </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-6 md:grid-rows-2 gap-6 h-auto md:h-[600px]">
-          <div className="md:col-span-3 bg-gradient-to-br from-blue-600/20 to-indigo-600/5 border border-slate-700/50 rounded-[2.5rem] p-10 flex flex-col justify-end">
-            <div className="text-4xl mb-6">🤝</div>
-            <h3 className="text-2xl font-bold text-white mb-2">
-              Simulasi Barter Adil
-            </h3>
-            <p className="text-slate-400">
-              Tukar jasa desain logo dengan jasa setup database. Adil,
-              transparan, dan saling menguntungkan.
-            </p>
-          </div>
-          <div className="md:col-span-3 bg-slate-800/40 border border-slate-700/50 rounded-[2.5rem] p-10 flex flex-col justify-end">
-            <div className="text-4xl mb-6">⭐</div>
-            <h3 className="text-2xl font-bold text-white mb-2">
-              Sistem Reputasi
-            </h3>
-            <p className="text-slate-400">
-              Bangun reputasimu melalui ulasan bintang 5 dari teman sejawat
-              setelah berhasil membantu mereka.
-            </p>
-          </div>
-          <div className="md:col-span-2 bg-slate-800/40 border border-slate-700/50 rounded-[2.5rem] p-10 flex flex-col justify-end">
-            <div className="text-4xl mb-6">🛡️</div>
-            <h3 className="text-xl font-bold text-white mb-2">
-              Terverifikasi NIM
-            </h3>
-            <p className="text-slate-400">
-              Hanya untuk mahasiswa asli dengan verifikasi NIM yang ketat.
-            </p>
-          </div>
-          <div className="md:col-span-4 bg-gradient-to-r from-emerald-600/20 to-teal-600/5 border border-slate-700/50 rounded-[2.5rem] p-10 flex flex-col justify-center">
-            <h3 className="text-3xl font-black text-white mb-4 leading-tight">
-              Siap Bangun Portofolio <br /> Bersama Ribuan Mahasiswa?
-            </h3>
-            <Link
-              href="/register"
-              className="w-fit px-8 py-3 bg-white text-slate-900 font-bold rounded-xl hover:scale-105 transition-transform"
-            >
-              Join Sekarang
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* TESTIMONIAL */}
-      <section className="py-20 max-w-5xl mx-auto px-6">
-        <h2 className="text-3xl font-black text-white mb-12 text-center">
-          Testimoni Pengguna
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 flex flex-col items-center text-center">
-            <img
-              src="/images/user1.jpg"
-              alt="User 1"
-              className="w-20 h-20 mb-2 rounded-full"
-            />
-
-            <h3 className="text-lg font-bold text-white">Rina, 20</h3>
-            <p className="text-slate-400 text-sm">
-              "Dulu saya kesulitan cari bantuan coding, sekarang bisa barter
-              dengan teman yang jago desain. Portofolio saya jadi makin keren!"
-            </p>
-          </div>
-          <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 flex flex-col items-center text-center">
-            <img
-              src="/images/user2.jpg"
-              alt="User 2"
-              className="w-20 h-20 mb-2 rounded-full"
-            />
-            <h3 className="text-lg font-bold text-white">Dimas, 22</h3>
-            <p className="text-slate-400 text-sm">
-              "Awalnya ragu, tapi setelah coba ternyata seru banget! Bisa
-              belajar skill baru tanpa keluar uang."
-            </p>
-          </div>
-          <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 flex flex-col items-center text-center">
-            <img
-              src="/images/user3.jpg"
-              alt="User 3"
-              className="w-20 h-20 mb-2 rounded-full"
-            />
-            <h3 className="text-lg font-bold text-white">Eka, 21</h3>
-            <p className="text-slate-400 text-sm">
-              "Platform yang sangat membantu untuk mahasiswa seperti saya yang
-              ingin belajar banyak hal tanpa harus khawatir soal biaya."
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. FAQ Section */}
-      <section className="py-24 max-w-3xl mx-auto px-6">
-        <h2 className="text-3xl font-black text-white mb-12 text-center">
-          Tanya Jawab
-        </h2>
-        <div className="space-y-4">
-          {faqs.map((faq, i) => (
-            <div
-              key={i}
-              className="border border-slate-800 rounded-2xl overflow-hidden"
-            >
-              <button
-                onClick={() => setActiveFaq(activeFaq === i ? null : i)}
-                className="w-full p-6 text-left flex justify-between items-center bg-slate-800/20 hover:bg-slate-800/40 transition-colors"
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold px-8 py-4 rounded-2xl shadow-xl shadow-blue-500/25 btn-shine transition-all text-lg"
               >
-                <span className="font-bold text-white">{faq.q}</span>
-                <span
-                  className={`text-blue-500 transition-transform ${activeFaq === i ? 'rotate-180' : ''}`}
-                >
-                  ▼
-                </span>
-              </button>
-              {activeFaq === i && (
-                <div className="p-6 bg-slate-900/50 text-slate-400 text-sm leading-relaxed border-t border-slate-800">
-                  {faq.a}
-                </div>
-              )}
+                Mulai Barter
+                <ChevronRight size={20} />
+              </Link>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center gap-2 glass text-slate-300 hover:text-white font-semibold px-8 py-4 rounded-2xl transition-all text-lg"
+              >
+                Sudah Punya Akun
+              </Link>
             </div>
-          ))}
+          </motion.div>
+
+          {/* STATS */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="flex justify-center gap-8 md:gap-16 mt-16"
+          >
+            {[
+              { value: '100+', label: 'Mahasiswa' },
+              { value: '7', label: 'Kategori Skill' },
+              { value: '24/7', label: 'Akses Platform' },
+            ].map((stat, i) => (
+              <div key={i} className="text-center">
+                <div className="text-2xl md:text-3xl font-black text-white">{stat.value}</div>
+                <div className="text-xs text-slate-500 font-medium mt-1">{stat.label}</div>
+              </div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 border-t border-slate-800 text-center">
-        <div className="text-xl font-black text-white mb-4">
-          Swap<span className="text-blue-500">Skill</span>
-        </div>
-        <p className="text-slate-500 text-sm italic mb-4">
-          "Dari Mahasiswa, Oleh Mahasiswa, Untuk Mahasiswa."
-        </p>
-        <p className="text-slate-600 text-xs tracking-widest uppercase font-bold">
-          &copy; {new Date().getFullYear()} KELOMPOK KUPU-KUPU UNPAM
-        </p>
-      </footer>
+      {/* FEATURES */}
+      <section className="py-20 px-4 relative">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Kenapa SwapSkill?</h2>
+            <p className="text-slate-400 text-lg max-w-xl mx-auto">Platform yang dirancang khusus untuk kebutuhan mahasiswa</p>
+          </motion.div>
 
-      {/* Animasi Marquee CSS */}
-      <style jsx>{`
-        @keyframes marquee {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-        .animate-marquee {
-          display: flex;
-          width: fit-content;
-          animation: marquee 30s linear infinite;
-        }
-      `}</style>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {features.map((f, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="glass rounded-2xl p-6 hover-glow transition-all group"
+              >
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.color} flex items-center justify-center text-white shadow-lg ${f.glow} mb-4 group-hover:scale-110 transition-transform`}>
+                  {f.icon}
+                </div>
+                <h3 className="text-white font-bold text-lg mb-2">{f.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{f.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="py-20 px-4">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-black text-white mb-4">Cara Kerja</h2>
+            <p className="text-slate-400 text-lg">3 langkah mudah untuk mulai barter</p>
+          </motion.div>
+
+          <div className="space-y-6">
+            {[
+              { step: '01', title: 'Buat Tawaran', desc: 'Posting skill yang kamu butuhkan dan yang bisa kamu tawarkan.' },
+              { step: '02', title: 'Ajukan Barter', desc: 'Temukan tawaran yang cocok dan kirim pengajuan barter.' },
+              { step: '03', title: 'Mulai Belajar', desc: 'Setelah diterima, chat dan mulai bertukar ilmu bersama!' },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15 }}
+                className="glass rounded-2xl p-6 flex items-start gap-5 hover-glow transition-all"
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-emerald-500/20 border border-blue-500/20 flex items-center justify-center text-blue-400 font-black text-lg shrink-0">
+                  {item.step}
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-lg mb-1">{item.title}</h3>
+                  <p className="text-slate-400 text-sm">{item.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-20 px-4">
+        <div className="max-w-3xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="glass-strong rounded-3xl p-10 md:p-16 relative overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/5 to-emerald-500/5" />
+            <div className="relative z-10">
+              <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
+                Siap Mulai <span className="gradient-text">Barter?</span>
+              </h2>
+              <p className="text-slate-400 text-lg mb-8 max-w-md mx-auto">
+                Bergabung dengan komunitas mahasiswa yang saling berbagi ilmu
+              </p>
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-emerald-500 text-white font-bold px-10 py-4 rounded-2xl shadow-xl shadow-blue-500/25 btn-shine transition-all text-lg hover:shadow-blue-500/40"
+              >
+                Daftar Sekarang — Gratis
+                <ChevronRight size={20} />
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="py-8 px-4 border-t border-white/5">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
+              <Zap size={12} className="text-white" />
+            </div>
+            <span className="text-sm font-bold text-slate-500">SwapSkill</span>
+          </div>
+          <p className="text-xs text-slate-600">© 2026 SwapSkill. Platform Barter Skill Mahasiswa.</p>
+        </div>
+      </footer>
     </div>
   );
 }

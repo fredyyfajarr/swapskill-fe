@@ -1,139 +1,179 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import toast from 'react-hot-toast';
-import ConfirmModal from './ConfirmModal';
-import NotificationBell from './NotificationBell';
-import api from '@/lib/axios';
 import useSWR from 'swr';
 import { getCurrentUser } from '@/features/users/infrastructure/profileRepository';
+import NotificationBell from '@/components/NotificationBell';
+import { Menu, X, User, LogOut, ArrowRightLeft, LayoutDashboard, MessageCircle, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import api from '@/lib/axios';
+import toast from 'react-hot-toast';
 
 export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const { data: user } = useSWR('currentUser', getCurrentUser);
   const router = useRouter();
+  const pathname = usePathname();
   const hamburgerRef = useRef<HTMLDivElement>(null);
+
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        hamburgerRef.current &&
-        !hamburgerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
+      if (hamburgerRef.current && !hamburgerRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const executeLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.post('/logout');
+    } catch {}
     localStorage.removeItem('token');
-    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    toast.success('Berhasil keluar. Sampai jumpa lagi!');
-    setIsLogoutModalOpen(false);
-    router.push('/');
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    toast.success('Berhasil logout');
+    router.push('/login');
   };
 
-  const handleLogoutClick = () => {
-    setIsOpen(false);
-    setIsLogoutModalOpen(true);
-  };
+  const navLinks = [
+    { href: '/dashboard', label: 'Skill Board', icon: <LayoutDashboard size={16} /> },
+    { href: '/barters', label: 'Barter Saya', icon: <ArrowRightLeft size={16} /> },
+    { href: '/messages', label: 'Pesan', icon: <MessageCircle size={16} /> },
+  ];
+
+  const isActive = (href: string) => pathname === href;
 
   return (
-    <>
-      <nav className="fixed top-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
-        <div className="relative w-full max-w-5xl bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl px-4 sm:px-6 py-3 flex justify-between items-center shadow-[0_8px_30px_rgb(0,0,0,0.4)] pointer-events-auto transition-all">
-          <Link
-            href="/dashboard"
-            className="text-2xl font-black tracking-tighter text-white z-50 relative"
-          >
-            Swap<span className="text-blue-500">Skill</span>
-            <span className="absolute -top-1 -right-2 w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+    <nav className="fixed top-0 left-0 right-0 z-50 glass-strong">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* LOGO */}
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow">
+              <Zap size={16} className="text-white" />
+            </div>
+            <span className="text-lg font-bold text-white tracking-tight">
+              Swap<span className="gradient-text">Skill</span>
+            </span>
           </Link>
 
-          <div className="flex items-center gap-3 sm:gap-5 z-50 relative">
-            {/* Lonceng Notifikasi */}
+          {/* DESKTOP NAV */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  isActive(link.href)
+                    ? 'text-blue-400 bg-blue-500/10'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {link.icon}
+                {link.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* RIGHT SIDE */}
+          <div className="flex items-center gap-2">
             <NotificationBell />
 
-            <div ref={hamburgerRef} className="relative">
+            {/* PROFILE DROPDOWN */}
+            <div className="relative" ref={profileRef}>
               <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="relative w-10 h-10 flex flex-col justify-center items-center group outline-none"
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white/5 transition-colors"
               >
-                <span
-                  className={`block w-6 h-[2px] bg-white rounded-full transition-transform duration-300 ease-in-out origin-center ${isOpen ? 'translate-y-[7px] rotate-45' : '-translate-y-1'}`}
-                ></span>
-                <span
-                  className={`block w-6 h-[2px] bg-white rounded-full transition-opacity duration-300 ease-in-out ${isOpen ? 'opacity-0' : 'opacity-100'}`}
-                ></span>
-                <span
-                  className={`block w-6 h-[2px] bg-white rounded-full transition-transform duration-300 ease-in-out origin-center ${isOpen ? '-translate-y-[7px] -rotate-45' : 'translate-y-1'}`}
-                ></span>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-xs">
+                  {user?.name?.charAt(0) || '?'}
+                </div>
+                <span className="text-sm text-slate-300 font-medium hidden lg:block max-w-[120px] truncate">
+                  {user?.name || 'Loading...'}
+                </span>
               </button>
 
-              <div
-                className={`absolute top-full right-0 mt-4 w-56 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl p-2 transition-all duration-300 origin-top-right ${isOpen ? 'scale-100 opacity-100 visible' : 'scale-95 opacity-0 invisible'}`}
-              >
-                <div className="flex flex-col gap-1">
-                  {/* LOGIKA NAVBAR TERKUNCI */}
-                  {user?.is_verified ? (
-                    <>
+              <AnimatePresence>
+                {isProfileOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-2 w-52 glass-strong rounded-xl shadow-2xl overflow-hidden"
+                  >
+                    <div className="p-3 border-b border-white/5">
+                      <p className="text-white font-semibold text-sm truncate">{user?.name}</p>
+                      <p className="text-slate-500 text-xs truncate">{user?.email}</p>
+                    </div>
+                    <div className="p-1.5">
                       <Link
                         href="/profile"
-                        onClick={() => setIsOpen(false)}
-                        className="px-4 py-3 text-sm font-medium text-slate-200 hover:text-white hover:bg-white/5 rounded-xl transition-colors text-left flex items-center gap-2"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                       >
-                        🧑‍💻 Lihat Profil Saya
+                        <User size={14} /> Profil Saya
                       </Link>
-                      <Link
-                        href="/messages"
-                        onClick={() => setIsOpen(false)}
-                        className="px-4 py-3 text-sm font-medium text-slate-200 hover:text-white hover:bg-white/5 rounded-xl transition-colors text-left flex items-center gap-2"
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 rounded-lg transition-colors"
                       >
-                        💬 Pesan / Chat
-                      </Link>
-                      <Link
-                        href="/settings"
-                        onClick={() => setIsOpen(false)}
-                        className="px-4 py-3 text-sm font-medium text-slate-200 hover:text-white hover:bg-white/5 rounded-xl transition-colors text-left flex items-center gap-2"
-                      >
-                        ⚙️ Pengaturan Akun
-                      </Link>
-                    </>
-                  ) : (
-                    <div className="px-4 py-2 text-xs font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-xl mx-1 mb-1 text-center">
-                      ⏳ Menunggu Verifikasi
+                        <LogOut size={14} /> Keluar
+                      </button>
                     </div>
-                  )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-                  <div className="h-px w-full bg-slate-700/50 my-1"></div>
+            {/* MOBILE HAMBURGER */}
+            <div className="md:hidden" ref={hamburgerRef}>
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
 
-                  <button
-                    onClick={handleLogoutClick}
-                    className="w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 font-bold rounded-xl transition-colors flex items-center gap-2"
+              <AnimatePresence>
+                {isMobileMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    className="absolute top-full left-0 right-0 glass-strong border-t border-white/5 p-3"
                   >
-                    🚪 Logout
-                  </button>
-                </div>
-              </div>
+                    {navLinks.map(link => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                          isActive(link.href)
+                            ? 'text-blue-400 bg-blue-500/10'
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        {link.icon}
+                        {link.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
-      </nav>
-
-      <ConfirmModal
-        isOpen={isLogoutModalOpen}
-        onClose={() => setIsLogoutModalOpen(false)}
-        onConfirm={executeLogout}
-        title="Keluar dari SwapSkill?"
-        message="Apakah kamu yakin ingin keluar? Kamu harus login kembali nanti untuk melihat tawaran barter."
-        confirmText="Ya, Keluar"
-        type="danger"
-      />
-    </>
+      </div>
+    </nav>
   );
 }

@@ -1,132 +1,121 @@
 'use client';
 
 import { useState } from 'react';
-import toast from 'react-hot-toast';
-import api from '@/lib/axios';
-
-interface ReviewModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  revieweeId: number | null;
-  revieweeName: string;
-  onSuccess?: () => void; // Fungsi untuk me-refresh data setelah sukses
-}
+import { motion } from 'framer-motion';
+import { Star, X, Send } from 'lucide-react';
 
 export default function ReviewModal({
   isOpen,
   onClose,
-  revieweeId,
+  onSubmit,
   revieweeName,
-  onSuccess,
-}: ReviewModalProps) {
-  const [rating, setRating] = useState(0);
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: { rating: number; comment: string }) => void;
+  revieweeName: string;
+}) {
+  const [rating, setRating] = useState(5);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (rating === 0) {
-      toast.error('Pilih jumlah bintang terlebih dahulu!');
-      return;
-    }
-
-    setIsSubmitting(true);
+    setLoading(true);
     try {
-      await api.post('/reviews', {
-        reviewee_id: revieweeId,
-        rating: rating,
-        comment: comment,
-      });
-      toast.success(`Ulasan untuk ${revieweeName} berhasil dikirim! ⭐`);
-      setRating(0);
+      await onSubmit({ rating, comment });
+      setRating(5);
       setComment('');
-      if (onSuccess) onSuccess();
-      onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Gagal mengirim ulasan.');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      {/* Background Blur */}
-      <div
-        className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"
-        onClick={onClose}
-      ></div>
-
-      {/* Modal Box */}
-      <div className="relative bg-slate-800 border border-slate-700 w-full max-w-md rounded-3xl p-6 shadow-2xl transform transition-all animate-in fade-in zoom-in-95 duration-200">
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-tr from-yellow-500 to-orange-400 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 rotate-12 shadow-lg shadow-yellow-500/20">
-            ⭐
-          </div>
-          <h3 className="text-xl font-bold text-white">Beri Ulasan</h3>
-          <p className="text-slate-400 text-sm mt-1">
-            Bagaimana pengalamanmu barter dengan{' '}
-            <span className="text-blue-400 font-bold">{revieweeName}</span>?
-          </p>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="glass-strong rounded-2xl p-6 w-full max-w-md shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-bold text-white">Beri Ulasan</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors">
+            <X size={18} />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          {/* Bintang Interaktif */}
-          <div className="flex justify-center gap-2 mb-6">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                className={`text-4xl transition-all transform hover:scale-110 ${
-                  (hoveredRating || rating) >= star
-                    ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]'
-                    : 'text-slate-600 grayscale'
-                }`}
-                onMouseEnter={() => setHoveredRating(star)}
-                onMouseLeave={() => setHoveredRating(0)}
-                onClick={() => setRating(star)}
-              >
-                ★
-              </button>
-            ))}
+        <p className="text-sm text-slate-400 mb-5">
+          Bagaimana pengalamanmu barter dengan <span className="text-white font-semibold">{revieweeName}</span>?
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Star Rating */}
+          <div>
+            <label className="text-xs font-semibold text-slate-400 mb-3 block uppercase tracking-wider">Rating</label>
+            <div className="flex gap-2 justify-center">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoveredRating(star)}
+                  onMouseLeave={() => setHoveredRating(0)}
+                  className="transition-transform hover:scale-125"
+                >
+                  <Star
+                    size={32}
+                    fill={star <= (hoveredRating || rating) ? 'currentColor' : 'none'}
+                    className={star <= (hoveredRating || rating) ? 'text-amber-400' : 'text-slate-600'}
+                  />
+                </button>
+              ))}
+            </div>
+            <p className="text-center text-xs text-slate-500 mt-2">
+              {rating === 1 && 'Kurang Baik'}
+              {rating === 2 && 'Cukup'}
+              {rating === 3 && 'Baik'}
+              {rating === 4 && 'Sangat Baik'}
+              {rating === 5 && 'Luar Biasa! ⭐'}
+            </p>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Komentar / Feedback
-            </label>
+          {/* Comment */}
+          <div>
+            <label className="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wider">Komentar</label>
             <textarea
-              required
-              rows={3}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Ceritakan pengalamanmu belajar bersamanya..."
-              className="w-full bg-slate-900/50 border border-slate-700 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-yellow-500 transition-colors resize-none"
-            ></textarea>
+              required
+              rows={3}
+              placeholder="Ceritakan pengalamanmu..."
+              className="w-full bg-slate-900/50 border border-slate-700/30 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500/50 transition-colors resize-none placeholder:text-slate-600"
+            />
           </div>
 
           <div className="flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-3 bg-slate-700/50 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-colors disabled:opacity-50"
+              className="flex-1 py-2.5 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 font-semibold rounded-xl transition-colors text-sm"
             >
               Batal
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-4 py-3 bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-black rounded-xl transition-all disabled:opacity-50 flex justify-center items-center gap-2"
+              disabled={loading}
+              className="flex-1 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-semibold rounded-xl shadow-lg shadow-amber-500/20 transition-all text-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isSubmitting ? 'Mengirim...' : 'Kirim Ulasan'}
+              <Send size={14} />
+              {loading ? 'Mengirim...' : 'Kirim Ulasan'}
             </button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }

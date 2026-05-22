@@ -5,137 +5,201 @@ import toast from 'react-hot-toast';
 import { togglePostBookmark } from '@/features/bookmarks/infrastructure/bookmarkRepository';
 import type { Post } from '@/features/posts/domain/post';
 import type { CurrentUser } from '@/features/users/domain/user';
+import { Bookmark, ArrowRightLeft, Send, Calendar } from 'lucide-react';
+import { motion } from 'framer-motion';
+import api from '@/lib/axios';
 
 export default function PostCard({
   post,
   currentUser,
   onBookmarkChange,
+  onBarterRequested,
 }: {
   post: Post;
   currentUser?: CurrentUser;
   onBookmarkChange?: (postId: number, isBookmarked: boolean) => void;
+  onBarterRequested?: () => void;
 }) {
   const [isBookmarked, setIsBookmarked] = useState(post.is_bookmarked || false);
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [barterLoading, setBarterLoading] = useState(false);
+  const [showBarterModal, setShowBarterModal] = useState(false);
+  const [barterMessage, setBarterMessage] = useState('');
 
   const toggleBookmark = async () => {
+    if (bookmarkLoading) return;
+    setBookmarkLoading(true);
+    const prev = isBookmarked;
+    setIsBookmarked(!prev); // optimistic
+
     try {
       await togglePostBookmark(post.id);
-      const nextBookmarked = !isBookmarked;
-      setIsBookmarked(nextBookmarked);
-      onBookmarkChange?.(post.id, nextBookmarked);
-      toast.success(
-        !isBookmarked ? 'Disimpan ke Bookmark 🔖' : 'Dihapus dari Bookmark 🗑️',
-      );
+      onBookmarkChange?.(post.id, !prev);
+      toast.success(!prev ? 'Disimpan ke Bookmark' : 'Dihapus dari Bookmark');
     } catch {
+      setIsBookmarked(prev); // rollback
       toast.error('Gagal menyimpan bookmark.');
+    } finally {
+      setBookmarkLoading(false);
     }
   };
 
-  const handleChatWA = () => {
-    let phone = post.user?.whatsapp_number || '';
-    if (phone.startsWith('0')) phone = '62' + phone.substring(1);
-
-    const message = `Halo ${post.user?.name}, saya lihat tawaran barter kamu di SwapSkill. Saya bisa bantu ${post.needed_skill?.name} dan butuh bantuan ${post.offered_skill?.name} kamu. Boleh diskusi?`;
-    window.open(
-      `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
-      '_blank',
-    );
+  const handleBarterRequest = async () => {
+    setBarterLoading(true);
+    try {
+      await api.post('/barter-requests', {
+        post_id: post.id,
+        message: barterMessage || null,
+      });
+      toast.success('Pengajuan barter berhasil dikirim! 🎉');
+      setShowBarterModal(false);
+      setBarterMessage('');
+      onBarterRequested?.();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Gagal mengajukan barter';
+      toast.error(msg);
+    } finally {
+      setBarterLoading(false);
+    }
   };
 
   return (
-    <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800/60 transition-colors relative group h-full flex flex-col">
-      {/* TOMBOL BOOKMARK */}
-      <button
-        onClick={toggleBookmark}
-        className="absolute top-5 right-5 text-xl opacity-70 hover:opacity-100 hover:scale-110 transition-all focus:outline-none"
-        title="Simpan Tawaran"
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="glass rounded-2xl p-5 md:p-6 hover-glow transition-all duration-300 relative group h-full flex flex-col"
       >
-        {isBookmarked ? '🔖' : '🤍'}
-      </button>
+        {/* BOOKMARK BUTTON */}
+        <button
+          onClick={toggleBookmark}
+          disabled={bookmarkLoading}
+          className={`absolute top-4 right-4 p-2 rounded-xl transition-all duration-200 ${
+            isBookmarked
+              ? 'text-amber-400 bg-amber-400/10 hover:bg-amber-400/20'
+              : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+          }`}
+          title={isBookmarked ? 'Hapus Bookmark' : 'Simpan Tawaran'}
+        >
+          <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} strokeWidth={2} />
+        </button>
 
-      {/* HEADER CARD */}
-      <div className="flex items-center gap-3 mb-5">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/20 shrink-0">
-          {post.user?.name?.charAt(0).toUpperCase() || 'U'}
-        </div>
-        <div>
-          <h4 className="text-white font-bold text-sm">{post.user?.name}</h4>
-          <p className="text-slate-400 text-xs">
-            {new Date(post.created_at).toLocaleDateString('id-ID', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            })}
-          </p>
-        </div>
-      </div>
-
-      {/* SKILL BARTER DENGAN ICON PANAH (⇄) */}
-      <div className="flex items-center gap-2 mb-5">
-        <div className="flex-1 bg-slate-900/50 p-3 rounded-xl border border-slate-700/50 text-center">
-          <p className="text-[10px] text-slate-500 font-bold mb-1 uppercase tracking-widest">
-            Butuh Bantuan
-          </p>
-          <p
-            className="text-emerald-400 font-bold text-sm truncate"
-            title={post.needed_skill?.name}
-          >
-            {post.needed_skill?.name}
-          </p>
-        </div>
-
-        {/* Icon Tukar / Swap */}
-        <div className="shrink-0 text-slate-500 bg-slate-800 p-2 rounded-full border border-slate-700">
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-            ></path>
-          </svg>
-        </div>
-
-        <div className="flex-1 bg-slate-900/50 p-3 rounded-xl border border-slate-700/50 text-center">
-          <p className="text-[10px] text-slate-500 font-bold mb-1 uppercase tracking-widest">
-            Tawarkan Skill
-          </p>
-          <p
-            className="text-blue-400 font-bold text-sm truncate"
-            title={post.offered_skill?.name}
-          >
-            {post.offered_skill?.name}
-          </p>
-        </div>
-      </div>
-
-      {/* DESKRIPSI (flex-grow agar mengisi ruang kosong dan meratakan tombol bawah) */}
-      <div className="flex-grow flex flex-col">
-        <p className="text-slate-300 text-sm leading-relaxed bg-slate-900/30 p-4 rounded-xl border border-slate-700/30 h-full">
-          &quot;{post.description}&quot;
-        </p>
-      </div>
-
-      {/* FOOTER (TOMBOL AKSI) */}
-      <div className="flex justify-end border-t border-slate-700/50 pt-4 mt-5">
-        {currentUser?.id !== post.user?.id ? (
-          <button
-            onClick={handleChatWA}
-            className="flex items-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-[#25D366]/20 w-full justify-center md:w-auto"
-          >
-            💬 Chat via WhatsApp
-          </button>
-        ) : (
-          <div className="px-4 py-2 bg-slate-700/50 text-slate-400 rounded-xl text-sm font-semibold border border-slate-600/50 w-full text-center md:w-auto">
-            📝 Postingan Kamu Sendiri
+        {/* HEADER */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/20 shrink-0">
+            {post.user?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
-        )}
-      </div>
-    </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-white font-semibold text-sm truncate">{post.user?.name}</h4>
+            <p className="text-slate-500 text-xs flex items-center gap-1">
+              <Calendar size={10} />
+              {new Date(post.created_at).toLocaleDateString('id-ID', {
+                day: 'numeric', month: 'short', year: 'numeric',
+              })}
+            </p>
+          </div>
+        </div>
+
+        {/* SKILL SWAP */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="flex-1 bg-emerald-500/5 border border-emerald-500/10 p-3 rounded-xl text-center">
+            <p className="text-[9px] text-slate-500 font-bold mb-1 uppercase tracking-[0.15em]">Butuh</p>
+            <p className="text-emerald-400 font-bold text-xs truncate" title={post.needed_skill?.name}>
+              {post.needed_skill?.name}
+            </p>
+          </div>
+
+          <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-slate-800/80 border border-slate-700/50 text-slate-500">
+            <ArrowRightLeft size={14} />
+          </div>
+
+          <div className="flex-1 bg-blue-500/5 border border-blue-500/10 p-3 rounded-xl text-center">
+            <p className="text-[9px] text-slate-500 font-bold mb-1 uppercase tracking-[0.15em]">Tawarkan</p>
+            <p className="text-blue-400 font-bold text-xs truncate" title={post.offered_skill?.name}>
+              {post.offered_skill?.name}
+            </p>
+          </div>
+        </div>
+
+        {/* DESCRIPTION */}
+        <div className="flex-grow mb-4">
+          <p className="text-slate-400 text-sm leading-relaxed line-clamp-3">
+            &quot;{post.description}&quot;
+          </p>
+        </div>
+
+        {/* FOOTER */}
+        <div className="pt-4 border-t border-white/5">
+          {currentUser?.id !== post.user?.id ? (
+            <button
+              onClick={() => setShowBarterModal(true)}
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all btn-shine shadow-lg shadow-blue-500/20"
+            >
+              <ArrowRightLeft size={16} />
+              Ajukan Barter
+            </button>
+          ) : (
+            <div className="px-4 py-2.5 bg-slate-800/50 text-slate-500 rounded-xl text-sm font-medium text-center border border-slate-700/30">
+              Postingan Kamu
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* BARTER REQUEST MODAL */}
+      {showBarterModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowBarterModal(false)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-strong rounded-2xl p-6 w-full max-w-md shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-white mb-1">Ajukan Barter</h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Kirim pengajuan barter ke <span className="text-white font-medium">{post.user?.name}</span>
+            </p>
+
+            <div className="flex items-center gap-2 mb-4 p-3 rounded-xl bg-slate-800/50 border border-slate-700/30">
+              <div className="flex-1 text-center">
+                <p className="text-[9px] text-slate-500 font-bold uppercase">Butuh</p>
+                <p className="text-emerald-400 text-xs font-bold">{post.needed_skill?.name}</p>
+              </div>
+              <ArrowRightLeft size={14} className="text-slate-600" />
+              <div className="flex-1 text-center">
+                <p className="text-[9px] text-slate-500 font-bold uppercase">Tawarkan</p>
+                <p className="text-blue-400 text-xs font-bold">{post.offered_skill?.name}</p>
+              </div>
+            </div>
+
+            <textarea
+              value={barterMessage}
+              onChange={e => setBarterMessage(e.target.value)}
+              placeholder="Tulis pesan untuk pemilik tawaran (opsional)..."
+              rows={3}
+              className="w-full bg-slate-900/50 border border-slate-700/50 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500/50 transition-colors mb-4 resize-none placeholder:text-slate-600"
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowBarterModal(false)}
+                className="flex-1 py-2.5 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 font-semibold rounded-xl transition-colors text-sm"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleBarterRequest}
+                disabled={barterLoading}
+                className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-xl transition-all text-sm disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+              >
+                <Send size={14} />
+                {barterLoading ? 'Mengirim...' : 'Kirim'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </>
   );
 }

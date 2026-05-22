@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import api from '@/lib/axios';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { Zap, Eye, EyeOff, LogIn, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,8 +14,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Redirect if already logged in is handled by middleware.ts
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,128 +25,71 @@ export default function LoginPage() {
       toast.success('Selamat datang kembali!');
       router.push('/dashboard');
     } catch (error: any) {
-      console.error(error);
-      const msg = error.response?.data?.message || error.message || 'Email atau password salah';
-      toast.error(`Error: ${msg}`);
+      const msg = error.response?.data?.message || 'Email atau password salah';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#0f172a] overflow-hidden">
-      {/* SISI KIRI: Visual & Branding (Hidden on Mobile) */}
+    <div className="min-h-screen bg-background bg-mesh flex items-center justify-center px-4 py-12">
+      {/* Background orbs */}
+      <div className="fixed top-20 left-20 w-72 h-72 bg-blue-500/8 rounded-full blur-[100px] animate-pulse-glow" />
+      <div className="fixed bottom-20 right-20 w-96 h-96 bg-emerald-500/6 rounded-full blur-[120px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
+
       <motion.div
-        initial={{ opacity: 0, x: -50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.8 }}
-        className="hidden lg:flex lg:w-1/2 relative flex-col justify-center px-20 bg-gradient-to-br from-blue-900 via-slate-900 to-[#0f172a]"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
       >
-        {/* Background Foto UNPAM dengan Opacity Tipis */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/foto-unpam.jpg"
-            alt="UNPAM Background"
-            className="w-full h-full object-cover opacity-10"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0f172a] via-transparent to-transparent"></div>
-        </div>
-
-        <div className="relative z-10">
-          <div className="text-3xl font-black text-white mb-6">
-            Swap<span className="text-blue-500">Skill</span>
-          </div>
-          <h1 className="text-5xl font-black text-white leading-tight mb-6">
-            Lanjutkan Perjalanan <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
-              Barter Keahlianmu.
-            </span>
-          </h1>
-          <p className="text-slate-400 text-lg max-w-md leading-relaxed">
-            Masuk untuk terhubung kembali dengan ratusan mahasiswa lainnya dan
-            mulai kolaborasi tanpa biaya.
-          </p>
-
-          <div className="mt-12 flex items-center gap-4 text-sm text-slate-500 font-medium">
-            <div className="flex -space-x-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="w-8 h-8 rounded-full border-2 border-[#0f172a] bg-slate-700 flex items-center justify-center text-[10px] text-white"
-                >
-                  U{i}
-                </div>
-              ))}
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <Zap size={20} className="text-white" />
             </div>
-            <span>Bergabung dengan 500+ mahasiswa aktif</span>
-          </div>
+            <span className="text-2xl font-bold text-white">
+              Swap<span className="gradient-text">Skill</span>
+            </span>
+          </Link>
+          <h1 className="text-xl font-bold text-white mb-1">Selamat Datang Kembali</h1>
+          <p className="text-slate-500 text-sm">Masuk ke akun SwapSkill kamu</p>
         </div>
-      </motion.div>
 
-      {/* SISI KANAN: Form Login */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 relative">
-        {/* Glowing Ornaments for Mobile Background */}
-        <div className="lg:hidden absolute top-[-10%] right-[-10%] w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none"></div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md bg-slate-800/40 backdrop-blur-2xl border border-slate-700/50 p-8 md:p-12 rounded-[2.5rem] shadow-2xl shadow-black/50"
-        >
-          <div className="mb-10 lg:hidden text-center">
-            <h2 className="text-2xl font-black text-white tracking-tight">
-              Swap<span className="text-blue-500">Skill</span>
-            </h2>
-          </div>
-
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-white tracking-tight mb-2">
-              Selamat Datang
-            </h2>
-            <p className="text-slate-400">Silakan masukkan detail akunmu.</p>
-          </div>
-
+        {/* Form Card */}
+        <div className="glass-strong rounded-2xl p-6 md:p-8 shadow-2xl">
           <form onSubmit={handleLogin} className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-400 ml-1">
-                Email Mahasiswa
-              </label>
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wider">Email</label>
               <input
                 type="email"
-                placeholder="nama@student.unpam.ac.id"
-                required
-                className="w-full p-4 bg-slate-900/60 border border-slate-700 rounded-2xl text-white outline-none focus:border-blue-500 transition-all placeholder:text-slate-600"
+                value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="nama@email.com"
+                className="w-full bg-slate-900/50 border border-slate-700/30 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-600"
               />
             </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between items-center ml-1">
-                <label className="text-sm font-medium text-slate-400">
-                  Password
-                </label>
-                <Link
-                  href="#"
-                  className="text-xs text-blue-500 hover:underline"
-                >
-                  Lupa Password?
-                </Link>
-              </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wider">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  required
-                  className="w-full p-4 bg-slate-900/60 border border-slate-700 rounded-2xl text-white outline-none focus:border-blue-500 transition-all placeholder:text-slate-600"
+                  value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••"
+                  className="w-full bg-slate-900/50 border border-slate-700/30 text-white rounded-xl px-4 py-3 pr-12 text-sm outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-600"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
                 >
-                  {showPassword ? '🙈' : '👁️'}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
@@ -155,26 +97,29 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold p-4 rounded-2xl transition-all shadow-xl shadow-blue-900/20 disabled:opacity-50 mt-4 relative overflow-hidden group"
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 disabled:opacity-50 transition-all btn-shine flex items-center justify-center gap-2"
             >
-              <span className="relative z-10">
-                {loading ? 'Sedang Masuk...' : 'Masuk Sekarang'}
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <LogIn size={16} />
+                  Masuk
+                </>
+              )}
             </button>
           </form>
 
-          <p className="text-center text-sm text-slate-500 mt-8">
-            Belum punya akun?{' '}
-            <Link
-              href="/register"
-              className="text-white font-bold hover:text-blue-400 transition-colors underline underline-offset-4 decoration-blue-500/30"
-            >
-              Daftar Gratis
-            </Link>
-          </p>
-        </motion.div>
-      </div>
+          <div className="mt-6 pt-5 border-t border-white/5 text-center">
+            <p className="text-slate-500 text-sm">
+              Belum punya akun?{' '}
+              <Link href="/register" className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">
+                Daftar Sekarang
+              </Link>
+            </p>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
