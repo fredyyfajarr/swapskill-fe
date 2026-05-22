@@ -14,12 +14,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      router.push('/dashboard');
-    }
-  }, [router]);
+  // Redirect if already logged in is handled by middleware.ts
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +26,9 @@ export default function LoginPage() {
       toast.success('Selamat datang kembali!');
       router.push('/dashboard');
     } catch (error: any) {
-      toast.error('Email atau password salah');
+      console.error(error);
+      const msg = error.response?.data?.message || error.message || 'Email atau password salah';
+      toast.error(`Error: ${msg}`);
     } finally {
       setLoading(false);
     }
