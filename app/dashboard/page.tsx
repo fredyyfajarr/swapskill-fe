@@ -82,9 +82,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (userError) {
-      router.push('/login');
+      localStorage.removeItem('token');
+      document.cookie = 'token=; path=/; max-age=0';
+      window.location.href = '/login';
     }
-  }, [userError, router]);
+  }, [userError]);
 
   const handleLoadMore = () => {
     setSize(size + 1);

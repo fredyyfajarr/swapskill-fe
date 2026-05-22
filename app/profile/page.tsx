@@ -33,9 +33,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (profileError && profileError.response?.status === 401) {
-      router.push('/login');
+      localStorage.removeItem('token');
+      document.cookie = 'token=; path=/; max-age=0';
+      window.location.href = '/login';
     }
-  }, [profileError, router]);
+  }, [profileError]);
 
   useEffect(() => {
     if (profile) {
