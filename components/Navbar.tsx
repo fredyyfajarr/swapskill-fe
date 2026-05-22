@@ -7,26 +7,15 @@ import toast from 'react-hot-toast';
 import ConfirmModal from './ConfirmModal';
 import NotificationBell from './NotificationBell';
 import api from '@/lib/axios';
+import useSWR from 'swr';
+import { getCurrentUser } from '@/features/users/infrastructure/profileRepository';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const { data: user } = useSWR('currentUser', getCurrentUser);
   const router = useRouter();
-
   const hamburgerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await api.get('/profile');
-        setUser(res.data.data);
-      } catch (e) {
-        console.error('Gagal mengambil profil di Navbar', e);
-      }
-    };
-    fetchUser();
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
