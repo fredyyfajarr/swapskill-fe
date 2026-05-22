@@ -34,7 +34,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (profileError && profileError.response?.status === 401) {
       localStorage.removeItem('token');
-      document.cookie = 'token=; path=/; max-age=0';
+      document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       window.location.href = '/login';
     }
   }, [profileError]);

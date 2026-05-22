@@ -4,13 +4,13 @@ const cspHeader = `
   default-src 'self';
   script-src 'self' 'unsafe-eval' 'unsafe-inline';
   style-src 'self' 'unsafe-inline';
-  img-src 'self' blob: data:;
+  img-src 'self' blob: data: http://localhost:8000 http://127.0.0.1:8000;
+  connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 ws://localhost:8080 ws://127.0.0.1:8080;
   font-src 'self';
   object-src 'none';
   base-uri 'self';
   form-action 'self';
   frame-ancestors 'none';
-  upgrade-insecure-requests;
 `;
 
 const nextConfig: NextConfig = {
