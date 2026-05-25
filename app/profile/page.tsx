@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import useSWR from 'swr';
@@ -15,8 +14,6 @@ import PostCard from '@/components/PostCard';
 const fetcher = (url: string) => api.get(url).then(res => res.data.data);
 
 export default function ProfilePage() {
-  const router = useRouter();
-
   const { data: profile, error: profileError, isLoading: isLoadingProfile, mutate: mutateProfile } = useSWR('/profile', fetcher);
   const { data: stats, isLoading: isLoadingStats, mutate: mutateStats } = useSWR('/profile/stats', fetcher);
   const { data: bookmarksData, isLoading: isLoadingBookmarks, mutate: mutateBookmarks } = useSWR('/bookmarks', fetcher);

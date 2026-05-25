@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import useSWR from 'swr';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/axios';
@@ -18,7 +18,7 @@ export default function MessagesPage() {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [messageText, setMessageText] = useState('');
 
-  const { data: currentUser } = useSWR(selectedUserId ? '/profile' : null, fetcher);
+  const { data: currentUser } = useSWR(selectedUserId ? '/me' : null, fetcher);
   
   // Polling or revalidating the selected user's messages
   const { data: messages, isLoading: isLoadingMessages, mutate: mutateMessages } = useSWR(

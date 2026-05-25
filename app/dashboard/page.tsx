@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,10 +27,8 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
 }
 
 export default function DashboardPage() {
-  const router = useRouter();
-
   const { data: user, error: userError, isLoading: isLoadingUser } = useSWR('currentUser', getCurrentUser);
-  const { data: skills = [], isLoading: isLoadingSkills } = useSWR('skills', listSkills);
+  const { data: skills = [] } = useSWR('skills', listSkills);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState('');

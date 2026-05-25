@@ -27,7 +27,7 @@ export default function SettingsPage() {
 
   const fetchProfileData = async () => {
     try {
-      const res = await api.get('/profile');
+      const res = await api.get('/me');
       setProfile({
         name: res.data.data.name,
         nim: res.data.data.nim,

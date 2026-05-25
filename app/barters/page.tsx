@@ -7,8 +7,9 @@ import api from '@/lib/axios';
 import Navbar from '@/components/Navbar';
 import toast from 'react-hot-toast';
 import ReviewModal from '@/components/ReviewModal';
-import { ArrowRightLeft, Check, X, Clock, CheckCheck, MessageCircle, Star, ChevronDown } from 'lucide-react';
+import { ArrowRightLeft, Check, X, Clock, CheckCheck, MessageCircle, Star } from 'lucide-react';
 import Link from 'next/link';
+import { getCurrentUser } from '@/features/users/infrastructure/profileRepository';
 
 const fetcher = (url: string) => api.get(url).then(res => res.data.data);
 
@@ -32,7 +33,7 @@ type BarterRequest = {
 };
 
 export default function BartersPage() {
-  const { data: currentUser } = useSWR('/profile', fetcher);
+  const { data: currentUser } = useSWR('currentUser', getCurrentUser);
   const { data: barters, isLoading, mutate } = useSWR('/barter-requests', fetcher);
   const [filter, setFilter] = useState<string>('all');
   const [actionLoading, setActionLoading] = useState<number | null>(null);
