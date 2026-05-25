@@ -30,6 +30,13 @@ export default function ProfilePage() {
     nim: '',
     whatsapp_number: '',
   });
+  const [isEditPostModalOpen, setIsEditPostModalOpen] = useState(false);
+  const [editingPostId, setEditingPostId] = useState<number | null>(null);
+  const [editPostForm, setEditPostForm] = useState({
+    needed_skill: '',
+    offered_skill: '',
+    description: '',
+  });
 
   useEffect(() => {
     if (profileError && profileError.response?.status === 401) {
@@ -159,26 +166,29 @@ export default function ProfilePage() {
     }
   };
 
-  const openCompleteConfirm = (id: number) => {
-    setConfirmConfig({
-      isOpen: true,
-      title: 'Tandai Selesai?',
-      message:
-        'Pastikan kamu sudah menyelesaikan barter ini. Reputasimu akan meningkat!',
-      type: 'success',
-      action: () => executeComplete(id),
+  const openEditPostModal = (post: any) => {
+    setEditingPostId(post.id);
+    setEditPostForm({
+      needed_skill: post.needed_skill?.name ?? '',
+      offered_skill: post.offered_skill?.name ?? '',
+      description: post.description ?? '',
     });
+    setIsEditPostModalOpen(true);
   };
 
-  const executeComplete = async (id: number) => {
-    setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+  const handleUpdatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPostId) return;
+
     try {
-      await api.patch(`/posts/${id}/status`, { status: 'completed' });
-      toast.success('Barter selesai! Reputasi meningkat.');
+      await api.put(`/posts/${editingPostId}`, editPostForm);
+      toast.success('Tawaran berhasil diperbarui');
+      setIsEditPostModalOpen(false);
+      setEditingPostId(null);
       mutateProfile();
       mutateStats();
     } catch (error) {
-      toast.error('Gagal update status');
+      toast.error('Gagal memperbarui tawaran');
     }
   };
 
@@ -439,14 +449,12 @@ export default function ProfilePage() {
                           &quot;{post.description}&quot;
                         </p>
                         <div className="flex gap-2 mt-4 pt-4 border-t border-border">
-                          {post.status !== 'completed' && (
-                            <button
-                              onClick={() => openCompleteConfirm(post.id)}
-                              className="flex-1 sm:flex-none text-xs bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 font-bold px-4 py-2.5 rounded-xl transition-colors"
-                            >
-                              ✓ Selesai
-                            </button>
-                          )}
+                          <button
+                            onClick={() => openEditPostModal(post)}
+                            className="flex-1 sm:flex-none text-xs bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 font-bold px-4 py-2.5 rounded-xl transition-colors"
+                          >
+                            Edit
+                          </button>
                           <button
                             onClick={() => openDeleteConfirm(post.id)}
                             className="flex-1 sm:flex-none text-xs bg-destructive/10 hover:bg-destructive/20 text-destructive font-bold px-4 py-2.5 rounded-xl transition-colors"
@@ -554,6 +562,70 @@ export default function ProfilePage() {
           </div>
         </motion.div>
       </div>
+
+      <Modal
+        isOpen={isEditPostModalOpen}
+        onClose={() => setIsEditPostModalOpen(false)}
+        title="Edit Tawaran"
+      >
+        <form onSubmit={handleUpdatePost} className="space-y-4">
+          <div>
+            <label className="text-[10px] text-muted-foreground font-bold uppercase mb-1.5 block tracking-wider">
+              Saya butuh bantuan
+            </label>
+            <input
+              type="text"
+              value={editPostForm.needed_skill}
+              onChange={(e) => setEditPostForm({ ...editPostForm, needed_skill: e.target.value })}
+              className="w-full bg-background border border-border focus:border-primary rounded-xl px-4 py-2.5 text-foreground text-sm outline-none transition-all"
+              placeholder="Contoh: Next.js"
+              required
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-muted-foreground font-bold uppercase mb-1.5 block tracking-wider">
+              Sebagai gantinya
+            </label>
+            <input
+              type="text"
+              value={editPostForm.offered_skill}
+              onChange={(e) => setEditPostForm({ ...editPostForm, offered_skill: e.target.value })}
+              className="w-full bg-background border border-border focus:border-primary rounded-xl px-4 py-2.5 text-foreground text-sm outline-none transition-all"
+              placeholder="Contoh: Laravel"
+              required
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-muted-foreground font-bold uppercase mb-1.5 block tracking-wider">
+              Deskripsi
+            </label>
+            <textarea
+              value={editPostForm.description}
+              onChange={(e) => setEditPostForm({ ...editPostForm, description: e.target.value })}
+              className="w-full bg-background border border-border focus:border-primary rounded-xl px-4 py-2.5 text-foreground text-sm outline-none transition-all resize-none"
+              placeholder="Jelaskan kebutuhan bartermu..."
+              rows={4}
+              required
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsEditPostModalOpen(false)}
+              className="flex-1 py-3 bg-secondary/50 hover:bg-secondary text-foreground font-bold rounded-xl transition-all"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              className="flex-1 bg-primary py-3 rounded-xl font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+            >
+              Simpan
+            </button>
+          </div>
+        </form>
+      </Modal>
 
       <ConfirmModal
         isOpen={confirmConfig.isOpen}

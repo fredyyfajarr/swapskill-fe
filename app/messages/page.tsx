@@ -13,11 +13,12 @@ import { format } from 'date-fns';
 const fetcher = (url: string) => api.get(url).then(res => res.data.data);
 
 export default function MessagesPage() {
-  const { data: currentUser } = useSWR('/profile', fetcher);
   const { data: usersData, isLoading: isLoadingUsers } = useSWR('/messages', fetcher);
   
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [messageText, setMessageText] = useState('');
+
+  const { data: currentUser } = useSWR(selectedUserId ? '/profile' : null, fetcher);
   
   // Polling or revalidating the selected user's messages
   const { data: messages, isLoading: isLoadingMessages, mutate: mutateMessages } = useSWR(
@@ -116,6 +117,10 @@ export default function MessagesPage() {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col-reverse">
                   {isLoadingMessages ? (
                     <div className="flex justify-center"><div className="animate-pulse text-muted-foreground">Memuat...</div></div>
+                  ) : messages?.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+                      Chat kosong. Mulai percakapan dengan pesan pertama.
+                    </div>
                   ) : (
                     <AnimatePresence initial={false}>
                       {messages?.map((msg: any) => {
