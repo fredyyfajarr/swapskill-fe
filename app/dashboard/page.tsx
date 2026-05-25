@@ -9,7 +9,7 @@ import Navbar from '@/components/Navbar';
 import Modal from '@/components/Modal';
 import PostCard from '@/components/PostCard';
 import toast from 'react-hot-toast';
-import type { Post } from '@/features/posts/domain/post';
+import type { ListPostsParams, PaginatedPosts, Post } from '@/features/posts/domain/post';
 import {
   createPost,
   listPostRecommendations,
@@ -38,15 +38,17 @@ export default function DashboardPage() {
   const [sortBy, setSortBy] = useState('latest');
   const [showBookmarksOnly, setShowBookmarksOnly] = useState(false);
 
-  const getKey = (pageIndex: number, previousPageData: any) => {
+  type PostsKey = [string, ListPostsParams];
+
+  const getKey = (pageIndex: number, previousPageData: PaginatedPosts | null): PostsKey | null => {
     if (!user?.is_verified) return null;
     if (previousPageData && !previousPageData.hasMore) return null;
     return ['posts', { search: searchQuery, page: pageIndex + 1, skillId: selectedSkill, sortBy, bookmarkedOnly: showBookmarksOnly }];
   };
 
-  const { data: postsData, error: postsError, size, setSize, isValidating, mutate: mutatePosts } = useSWRInfinite(
+  const { data: postsData, error: postsError, size, setSize, isValidating, mutate: mutatePosts } = useSWRInfinite<PaginatedPosts>(
     getKey,
-    ([_, params]) => listPosts(params)
+    (key: PostsKey) => listPosts(key[1])
   );
 
   const posts: Post[] = postsData ? postsData.flatMap((page) => page.data) : [];
