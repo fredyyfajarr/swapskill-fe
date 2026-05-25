@@ -34,7 +34,7 @@ export default function LoginPage() {
       toast.success('Selamat datang kembali!');
 
       if (response.data.user?.role === 'admin') {
-        window.location.href = getAdminUrl();
+        window.location.href = response.data.admin_redirect_url || getAdminUrl();
         return;
       }
 
