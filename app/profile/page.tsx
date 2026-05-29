@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import useSWR from 'swr';
@@ -16,8 +15,6 @@ import { Pencil, Plus, Trash2, X, Star, Bookmark, Megaphone, Flame, PinIcon, Che
 const fetcher = (url: string) => api.get(url).then(res => res.data.data);
 
 export default function ProfilePage() {
-  const router = useRouter();
-
   const { data: profile, error: profileError, isLoading: isLoadingProfile, mutate: mutateProfile } = useSWR('/profile', fetcher);
   const { data: stats, isLoading: isLoadingStats, mutate: mutateStats } = useSWR('/profile/stats', fetcher);
   const { data: bookmarksData, isLoading: isLoadingBookmarks, mutate: mutateBookmarks } = useSWR('/bookmarks', fetcher);
@@ -25,7 +22,18 @@ export default function ProfilePage() {
   const [newSkill, setNewSkill] = useState('');
   const [activeTab, setActiveTab] = useState<'posts' | 'bookmarks'>('posts');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', nim: '', whatsapp_number: '' });
+  const [editForm, setEditForm] = useState({
+    name: '',
+    nim: '',
+    whatsapp_number: '',
+  });
+  const [isEditPostModalOpen, setIsEditPostModalOpen] = useState(false);
+  const [editingPostId, setEditingPostId] = useState<number | null>(null);
+  const [editPostForm, setEditPostForm] = useState({
+    needed_skill: '',
+    offered_skill: '',
+    description: '',
+  });
 
   useEffect(() => {
     if (profileError?.response?.status === 401) {
@@ -97,9 +105,41 @@ export default function ProfilePage() {
   };
 
   const executeDelete = async (id: number) => {
-    setConfirmConfig(prev => ({ ...prev, isOpen: false }));
-    try { await api.delete(`/posts/${id}`); toast.success('Tawaran dihapus'); mutateProfile(); mutateStats(); }
-    catch { toast.error('Gagal menghapus'); }
+    setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
+    try {
+      await api.delete(`/posts/${id}`);
+      toast.success('Tawaran berhasil dihapus');
+      mutateProfile();
+      mutateStats();
+    } catch (error) {
+      toast.error('Gagal menghapus tawaran');
+    }
+  };
+
+  const openEditPostModal = (post: any) => {
+    setEditingPostId(post.id);
+    setEditPostForm({
+      needed_skill: post.needed_skill?.name ?? '',
+      offered_skill: post.offered_skill?.name ?? '',
+      description: post.description ?? '',
+    });
+    setIsEditPostModalOpen(true);
+  };
+
+  const handleUpdatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPostId) return;
+
+    try {
+      await api.put(`/posts/${editingPostId}`, editPostForm);
+      toast.success('Tawaran berhasil diperbarui');
+      setIsEditPostModalOpen(false);
+      setEditingPostId(null);
+      mutateProfile();
+      mutateStats();
+    } catch (error) {
+      toast.error('Gagal memperbarui tawaran');
+    }
   };
 
   const isLoading = isLoadingProfile || isLoadingStats;
@@ -278,9 +318,16 @@ export default function ProfilePage() {
                           <span className="text-[10px] text-slate-500">{new Date(post.created_at).toLocaleDateString('id-ID')}</span>
                         </div>
                         <p className="text-slate-400 text-sm italic mb-4">&quot;{post.description}&quot;</p>
-                        <div className="flex gap-2 pt-3 border-t border-white/5">
-                          <button onClick={() => openDeleteConfirm(post.id)}
-                            className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold px-4 py-2 rounded-xl transition-colors"
+                        <div className="flex gap-2 mt-2 pt-4 border-t border-white/5">
+                          <button
+                            onClick={() => openEditPostModal(post)}
+                            className="flex-1 sm:flex-none text-xs bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-bold px-4 py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5"
+                          >
+                            <Pencil size={12} /> Edit
+                          </button>
+                          <button
+                            onClick={() => openDeleteConfirm(post.id)}
+                            className="flex-1 sm:flex-none text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold px-4 py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5"
                           >
                             <Trash2 size={12} /> Hapus
                           </button>
@@ -336,8 +383,77 @@ export default function ProfilePage() {
         </motion.div>
       </div>
 
-      <ConfirmModal isOpen={confirmConfig.isOpen} onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
-        onConfirm={confirmConfig.action} title={confirmConfig.title} message={confirmConfig.message} type={confirmConfig.type}
+      <Modal
+        isOpen={isEditPostModalOpen}
+        onClose={() => setIsEditPostModalOpen(false)}
+        title="Edit Tawaran"
+      >
+        <form onSubmit={handleUpdatePost} className="space-y-4">
+          <div>
+            <label className="text-[10px] text-slate-400 font-bold uppercase mb-1.5 block tracking-wider">
+              Saya butuh bantuan
+            </label>
+            <input
+              type="text"
+              value={editPostForm.needed_skill}
+              onChange={(e) => setEditPostForm({ ...editPostForm, needed_skill: e.target.value })}
+              className="w-full bg-slate-900/50 border border-slate-700/30 text-white rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-600"
+              placeholder="Contoh: Next.js"
+              required
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-slate-400 font-bold uppercase mb-1.5 block tracking-wider">
+              Sebagai gantinya
+            </label>
+            <input
+              type="text"
+              value={editPostForm.offered_skill}
+              onChange={(e) => setEditPostForm({ ...editPostForm, offered_skill: e.target.value })}
+              className="w-full bg-slate-900/50 border border-slate-700/30 text-white rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500/50 transition-all placeholder:text-slate-600"
+              placeholder="Contoh: Laravel"
+              required
+            />
+          </div>
+          <div>
+            <label className="text-[10px] text-slate-400 font-bold uppercase mb-1.5 block tracking-wider">
+              Deskripsi
+            </label>
+            <textarea
+              value={editPostForm.description}
+              onChange={(e) => setEditPostForm({ ...editPostForm, description: e.target.value })}
+              className="w-full bg-slate-900/50 border border-slate-700/30 text-white rounded-xl px-4 py-2.5 text-sm outline-none focus:border-blue-500/50 transition-all resize-none placeholder:text-slate-600"
+              placeholder="Jelaskan kebutuhan bartermu..."
+              rows={4}
+              required
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsEditPostModalOpen(false)}
+              className="flex-1 py-2.5 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 font-semibold rounded-xl transition-colors text-sm"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/20 transition-all text-sm"
+            >
+              Simpan
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmModal
+        isOpen={confirmConfig.isOpen}
+        onClose={() => setConfirmConfig((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmConfig.action}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        type={confirmConfig.type}
       />
 
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Profil">

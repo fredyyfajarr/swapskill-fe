@@ -7,6 +7,7 @@ import type { Post } from '@/features/posts/domain/post';
 import type { CurrentUser } from '@/features/users/domain/user';
 import { Bookmark, ArrowRightLeft, Send, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
+
 import Link from 'next/link';
 
 export default function PostCard({
@@ -85,13 +86,23 @@ export default function PostCard({
           <Bookmark size={18} fill={isBookmarked ? 'currentColor' : 'none'} strokeWidth={2} />
         </button>
 
-        {/* HEADER — clickable to public profile */}
-        <Link href={`/users/${post.user?.id}`} className="flex items-center gap-3 mb-4 hover:opacity-80 transition-opacity">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/20 shrink-0">
+        {/* HEADER */}
+        <div className="flex items-center gap-3 mb-4">
+          <Link
+            href={`/users/${post.user?.id}`}
+            className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/20 shrink-0 hover:scale-105 transition-transform"
+            title={`Lihat profil ${post.user?.name || 'user'}`}
+          >
             {post.user?.name?.charAt(0).toUpperCase() || 'U'}
-          </div>
+          </Link>
           <div className="flex-1 min-w-0">
-            <h4 className="text-white font-semibold text-sm truncate hover:text-blue-400 transition-colors">{post.user?.name}</h4>
+            <Link
+              href={`/users/${post.user?.id}`}
+              className="block text-white hover:text-blue-400 font-semibold text-sm truncate transition-colors"
+              title={`Lihat profil ${post.user?.name || 'user'}`}
+            >
+              {post.user?.name}
+            </Link>
             <p className="text-slate-500 text-xs flex items-center gap-1">
               <Calendar size={10} />
               {new Date(post.created_at).toLocaleDateString('id-ID', {
@@ -99,7 +110,8 @@ export default function PostCard({
               })}
             </p>
           </div>
-        </Link>
+          </div>
+        </div>
 
         {/* SKILL SWAP */}
         <div className="flex items-center gap-2 mb-4">

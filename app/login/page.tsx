@@ -8,6 +8,15 @@ import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { Zap, Eye, EyeOff, LogIn, ArrowRightLeft, Shield, Star } from 'lucide-react';
 
+function getAdminUrl(): string {
+  if (process.env.NEXT_PUBLIC_ADMIN_URL) {
+    return process.env.NEXT_PUBLIC_ADMIN_URL;
+  }
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+  return apiUrl.replace(/\/api\/?$/, '/admin');
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -23,6 +32,12 @@ export default function LoginPage() {
       localStorage.setItem('token', response.data.token);
       document.cookie = `token=${response.data.token}; path=/; max-age=86400`;
       toast.success('Selamat datang kembali!');
+
+      if (response.data.user?.role === 'admin') {
+        window.location.href = response.data.admin_redirect_url || getAdminUrl();
+        return;
+      }
+
       router.push('/dashboard');
     } catch (error: any) {
       const msg = error.response?.data?.message || 'Email atau password salah';

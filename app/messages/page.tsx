@@ -21,7 +21,6 @@ export default function MessagesPage() {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(initialUserId ? Number(initialUserId) : null);
   const [messageText, setMessageText] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
-
   const { data: messages, isLoading: isLoadingMessages, mutate: mutateMessages } = useSWR(
     selectedUserId ? `/messages/${selectedUserId}` : null,
     fetcher,
