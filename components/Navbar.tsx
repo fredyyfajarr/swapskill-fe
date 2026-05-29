@@ -6,7 +6,7 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { getCurrentUser } from '@/features/users/infrastructure/profileRepository';
 import NotificationBell from '@/components/NotificationBell';
-import { Menu, X, User, LogOut, ArrowRightLeft, LayoutDashboard, MessageCircle, Zap } from 'lucide-react';
+import { Menu, X, User, LogOut, ArrowRightLeft, LayoutDashboard, MessageCircle, Zap, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/axios';
 import toast from 'react-hot-toast';
@@ -122,6 +122,13 @@ export default function Navbar() {
                         className="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                       >
                         <User size={14} /> Profil Saya
+                      </Link>
+                      <Link
+                        href="/settings"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                      >
+                        <Settings size={14} /> Pengaturan
                       </Link>
                       <button
                         onClick={handleLogout}

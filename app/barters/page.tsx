@@ -285,7 +285,7 @@ export default function BartersPage() {
                         {barter.status === 'accepted' && (
                           <>
                             <Link
-                              href={`/messages`}
+                              href={`/messages?userId=${partner?.id}`}
                               className="flex items-center gap-1.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-semibold text-xs px-4 py-2.5 rounded-xl transition-colors"
                             >
                               <MessageCircle size={14} /> Chat Partner

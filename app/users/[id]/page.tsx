@@ -100,6 +100,20 @@ export default function PublicProfilePage() {
           </div>
         </div>
 
+        {/* Portofolio Keahlian */}
+        {userData.skills && userData.skills.length > 0 && (
+          <div className="mb-10 bg-slate-800/40 border border-slate-700/50 rounded-3xl p-6">
+            <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Portofolio Keahlian</h2>
+            <div className="flex flex-wrap gap-2">
+              {userData.skills.map((skill: any) => (
+                <span key={skill.id} className="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-sm font-bold">
+                  {skill.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Kolom Kiri: Postingan Aktif */}
           <div className="lg:col-span-2 space-y-6">

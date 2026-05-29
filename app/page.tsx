@@ -62,6 +62,16 @@ export default function LandingPage() {
 
       {/* HERO */}
       <section className="relative pt-32 pb-20 md:pt-44 md:pb-32 px-4">
+        {/* UNPAM Background Image */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <img
+            src="/foto-unpam.png"
+            alt="UNPAM Background"
+            className="w-full h-full object-cover opacity-[0.25]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
+        </div>
+
         {/* Background orbs */}
         <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-[100px] animate-pulse-glow" />
         <div className="absolute bottom-10 right-10 w-96 h-96 bg-emerald-500/8 rounded-full blur-[120px] animate-pulse-glow" style={{ animationDelay: '1.5s' }} />

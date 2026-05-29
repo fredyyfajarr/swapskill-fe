@@ -309,9 +309,12 @@ export default function DashboardPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-400 mb-1.5 block uppercase tracking-wider">Sebagai gantinya</label>
+                <label className="text-xs font-semibold text-slate-400 mb-1.5 flex justify-between uppercase tracking-wider">
+                  <span>Sebagai gantinya</span>
+                  {user?.skills && user.skills.length > 0 && <span className="text-emerald-500 font-bold lowercase">⭐ dari portfolio</span>}
+                </label>
                 <input
-                  list="skills-list"
+                  list={user?.skills && user.skills.length > 0 ? "my-skills-list" : "skills-list"}
                   required
                   placeholder="Keahlian saya..."
                   className="w-full p-3 bg-slate-900/50 border border-slate-700/30 rounded-xl text-white text-sm outline-none focus:border-emerald-500/50 placeholder:text-slate-600"
@@ -321,6 +324,11 @@ export default function DashboardPage() {
               </div>
               <datalist id="skills-list">
                 {skills.map((s) => (
+                  <option key={s.id} value={s.name} />
+                ))}
+              </datalist>
+              <datalist id="my-skills-list">
+                {user?.skills?.map((s: any) => (
                   <option key={s.id} value={s.name} />
                 ))}
               </datalist>
