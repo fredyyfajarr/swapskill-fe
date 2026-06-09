@@ -16,4 +16,4 @@ The frontend web application for SwapSkill, providing an intuitive interface for
 - **Animations**: Framer Motion
 - **Data Fetching**: SWR, Axios
 
-Copyright build dari nama saya Fredy Fajar Adi Putra
+Copyright &copy; 2026 Fredy Fajar Adi Putra. All Rights Reserved.
